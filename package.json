@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server",
+    "build": "webpack",
     "build-watch": "webpack -w",
     "start-dev": "npm run build-watch & npm run start",
     "start-server": "NODE_ENV='development' nodemon ./server -e html,js,scss --ignore public",
