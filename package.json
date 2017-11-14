@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server",
     "build-watch": "webpack -w",
-    "start-dev": "npm run build-watch & npm run start-server",
+    "start-dev": "npm run build-watch & npm run start",
     "start-server": "NODE_ENV='development' nodemon ./server -e html,js,scss --ignore public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -34,5 +35,8 @@
     "babel-preset-react": "^6.22.0",
     "babel-preset-stage-2": "^6.24.1",
     "babel-register": "^6.24.1"
+  },
+  "engines": {
+    "node": "8.9.1"
   }
 }
