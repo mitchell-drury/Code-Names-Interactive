@@ -4714,7 +4714,7 @@ var Main = function (_Component) {
                 }
             }
             if (openCells.length < 10) {
-                this.setState({ gameState: 'lost' });
+                this.setGameState('lost');
                 (0, _clientSocket.wonGame)(this.state.socket);
             } else {
                 var num = Math.floor(Math.random() * openCells.length);
@@ -4731,10 +4731,9 @@ var Main = function (_Component) {
                 }
                 this.setState({ gameState: gameState });
             } else {
-                console.log('setting game state,', initialMoles);
-                this.setState({ moleLocations: initialMoles, gameState: gameState }).then();
+                this.setState({ moleLocations: [[false, false, false, false, false], [false, false, false, false, false], [false, false, false, false, false], [false, false, false, false, false], [false, false, false, false, false]], gameState: gameState });
             }
-            console.log('after set game state', this.state.gameState);
+            console.log('after set game state', this.state.gameState, this.state.moleLocations);
         }
     }, {
         key: 'joinWaitingRoom',
@@ -5153,9 +5152,7 @@ function connectToSite(insertMole, setGameState) {
         socket.opponent = opponentId;
         setGameState('active');
     });
-    socket.on('lost', function () {
-        setGameState('ended');
-    });
+
     socket.on('won', function () {
         console.log('I won');
         socket.opponent = null;

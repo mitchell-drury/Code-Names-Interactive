@@ -26,9 +26,7 @@ function connectToSite (insertMole, setGameState) {
         socket.opponent = opponentId;
         setGameState('active');
     })
-    socket.on('lost', () => {
-        setGameState('ended')
-    })
+
     socket.on('won', () => {
         console.log('I won')
         socket.opponent = null;

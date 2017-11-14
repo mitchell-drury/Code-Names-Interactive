@@ -44,7 +44,7 @@ export default class Main extends Component {
             }
         }
         if (openCells.length < 10){
-            this.setState({gameState: 'lost'})
+            this.setGameState('lost')
             wonGame(this.state.socket);
         } else {
             let num = Math.floor(Math.random()*openCells.length);
@@ -60,10 +60,9 @@ export default class Main extends Component {
             }
             this.setState({gameState: gameState})
         } else {
-            console.log('setting game state,', initialMoles)
-            this.setState({moleLocations:initialMoles, gameState: gameState}).then();
+            this.setState({moleLocations:[[false,false,false,false,false],[false,false,false,false,false],[false,false,false,false,false],[false,false,false,false,false],[false,false,false,false,false]], gameState: gameState})
         }
-        console.log('after set game state', this.state.gameState)
+        console.log('after set game state', this.state.gameState, this.state.moleLocations)
     }
 
     joinWaitingRoom () {
