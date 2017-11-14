@@ -4,12 +4,28 @@ html, body{
     font-family:'Patrick Hand SC', Cursive, Serif;
 }
 
-#app {
+#app, #gameBoard {
     height: 100%;
     width:100%;
 }
 
-.button{
+#controls{
+    position: fixed;
+    z-index:10;
+    top: 20%;
+    width: 100%;
+}
+
+.normalSize{
+
+
+}
+
+.bigSize{
+
+}
+
+.button, .message{
     text-align:center;
     font-size: 2em;
     margin: 40px auto;
@@ -47,32 +63,8 @@ html, body{
     z-index:10;
     border:1px solid black;
 }
-#stopGame{
-    display:none;
-    height:30px;
-    width:30px;
-    background-color: red;
-    border:1px solid black;
-}
-#stopGame:hover{
-    background-color: #d60000;
-}
-#startGame{
-    height:30px;
-    width:30px;
-    background-color: #00FF10;
-    border:1px solid black;
-}
-#startGame:hover{
-    background-color:#03ea12;
-}
-#startGame:hover{
-    cursor:pointer;
-}
-#stopGame:hover{
-    cursor:pointer;
-}
-#gameBoard{
+
+#board{
     height:100%;
     width:100%;
     background: url(images/grass.jpg);
@@ -89,7 +81,7 @@ html, body{
     height:calc(20%);
 }
 
-.box{
+.cell{
     height:calc(100% - 20px);
     width: calc(20% - 20px);
     display:inline-block;

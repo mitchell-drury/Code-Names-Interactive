@@ -38,6 +38,7 @@ module.exports = io => {
         })
 
         socket.on('won', opponent => {
+            console.log('winning');
             socket.to(opponent).emit('won');
         })
     });

@@ -1,6 +1,6 @@
 import io from 'socket.io-client'
 
-function connectToSite (incrementMoles, setGameState) {
+function connectToSite (insertMole, setGameState) {
     const socket = io(window.location.origin)
 
     socket.on('connect', () => {
@@ -8,7 +8,8 @@ function connectToSite (incrementMoles, setGameState) {
     })
     socket.on('disconnect', () => {
         socket.emit('leave', 'waiting');
-        //also emit a winning to current opponent
+        socket.emit('won', socket.opponent);
+        //these aren't in the proper place
     })
     socket.on('joinedwaiting', msg => {
         console.log(msg)
@@ -18,7 +19,7 @@ function connectToSite (incrementMoles, setGameState) {
     })
     socket.on('moleSent', (msg) => {
         console.log('received mole')
-        incrementMoles();
+        insertMole();
     })
     socket.on('matched', opponentId => {
         console.log('match made, opponentId:', opponentId);
