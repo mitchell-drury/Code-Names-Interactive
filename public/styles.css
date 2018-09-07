@@ -2,11 +2,104 @@ html, body{
     margin:0;
     padding:0;
     font-family:'Patrick Hand SC', Cursive, Serif;
+    background-image: url('/images/grass.jpg');
 }
 
-#app, #gameBoard {
-    height: 100%;
-    width:100%;
+button{
+    font-family: 'Patrick Hand SC', Cursive, Serif;
+}
+
+#app {
+    height:85%;
+    width:98%;
+    padding:7.5% 1% 0 1%;
+}
+
+a, a:visited {
+    color:green;
+    text-decoration: none;
+    display:block;
+}
+
+.button {
+    max-width:400px;
+    text-align:center;
+    font-size: 2em;
+    border:2px solid #188a0b;
+    margin:20px auto;
+    padding:6px 5px 7px 5px;
+    background-color: white;
+    color: #188a0b;
+}
+
+a:hover, .button:hover {
+    background-color: rgb(205, 255, 205);
+    cursor: pointer;
+}
+
+button:focus{
+    outline:none;
+}
+
+input:focus {
+    outline:none;
+}
+
+.inline{
+    display:inline-block;
+}
+
+/******************** HOME **********************/
+#home {
+    margin:auto;
+    text-align: center;
+    width: 80%;
+    max-width: 400px;
+}
+
+#account{
+    margin:40px auto 20px auto;
+}
+
+#username, #password {
+    text-align:center;
+    font-size: 1.5em;
+    display:block;
+    margin: 20px auto;
+    width: 80%;
+    max-width: 400px;
+    border:2px solid #188a0b;
+    border-radius: 10px;
+    padding:6px 5px 7px 5px;
+    background-color:#fcff46;
+    color:#188a0b;
+}
+
+#username:focus, #password:focus {
+    background-color:#ffea2a;
+}
+
+#login, #signup{
+    margin: 10px 2.5%;
+    width: 45%;
+    max-width: 400px;   
+}
+
+#logout {
+    margin:auto;
+    width: 45%;
+    max-width:400px;
+}
+
+.message{
+    text-align:center;
+    font-size:1.5em;
+    width:calc(95%-30px);
+    max-width:600px;
+    margin:auto;
+    padding:15px;
+    background-color: white;
+    border:1px solid black;
 }
 
 #controls{
@@ -14,34 +107,6 @@ html, body{
     z-index:10;
     top: 20%;
     width: 100%;
-}
-
-.normalSize{
-
-
-}
-
-.bigSize{
-
-}
-
-.button, .message{
-    text-align:center;
-    font-size: 2em;
-    margin: 40px auto;
-    width: 80%;
-    max-width: 400px;
-    border:2px solid #188a0b;
-    padding:6px 5px 7px 5px;
-    background-color: white;
-    color: #188a0b
-}
-
-.button:hover{
-    cursor: pointer;
-    background-color:#188a0b;
-    color:white;
-    border: 2px solid white;
 }
 
 #waitingRoom{
@@ -56,14 +121,7 @@ html, body{
     color: #188a0b  
 }
 
-#gameControls{
-    position:fixed;
-    top:45%;
-    left:calc(50% - 16px);
-    z-index:10;
-    border:1px solid black;
-}
-
+/****************** Game Board****************/
 #board{
     height:100%;
     width:100%;
@@ -93,31 +151,6 @@ html, body{
     background: url(images/Optimized-mole.png);
     background-size:cover;
     background-position:center;
-}
-
-#message{
-    display:none;
-    position: fixed;
-    top:20%;
-    left:calc(10% - 24px);
-    width:80%;
-    border:2px solid black;
-    background-color:white;
-    padding:20px;
-    text-align:center;
-    z-index: 100;
-}
-#close{
-    position: absolute;
-    top:0;
-    right: 0;
-    background-image:url(images/xButton.png);
-    background-size:cover;
-    height: 30px;
-    width:30px;
-}
-#close:hover{
-    cursor:pointer;
 }
 
 #angles{

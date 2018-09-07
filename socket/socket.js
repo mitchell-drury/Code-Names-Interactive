@@ -4,20 +4,28 @@ module.exports = io => {
     io.on('connection', socket => {
         console.log('Hooked up!', socket.id)
         socket.on('disconnect', function() {
-            console.log('Severed the line. . .')
+            console.log('My severed socket: ' , socket.id)
+            socket.to(socket.opponent).emit('won', socket.id)
+            if (io.sockets.connected[socket.opponent]) {
+                io.sockets.connected[socket.opponent].opponent = null;
+            }
+            socket.opponent = null;
         })
 
         socket.on('join', room => {
             if (room === 'waiting' && !waitlist.includes(socket.id)){
                 waitlist.push(socket.id);
             }   
-            console.log(waitlist);
+            console.log('waitlist:', waitlist);
             socket.join(room); 
             socket.in(room).emit('joined' + room, 'Hey . . .')
             if (waitlist.length === 2){
                 while (waitlist.length >= 2){
                     let playerOne = waitlist.shift();
                     let playerTwo = waitlist.shift();
+                    io.sockets.connected[playerOne].opponent = playerTwo;
+                    io.sockets.connected[playerTwo].opponent = playerOne;
+                    console.log('matched socket ', io.sockets.connected[playerOne]);
                     io.to(playerOne).emit('matched', playerTwo);
                     io.to(playerTwo).emit('matched', playerOne);
                 }
@@ -29,17 +37,22 @@ module.exports = io => {
             if (waitlist.includes(socket.id)) {
                 removeFromWaitlist(socket.id);
             }
-            console.log(waitlist);
+            console.log('the leaving socket: ', socket.id)
+            console.log('someone left, still reaming:', waitlist);
             socket.to(room).emit('left' + room, 'Bye . . .')
         })
 
-        socket.on('sendMole', opponent => {
-            socket.to(opponent).emit('moleSent')
+        socket.on('sendMole', () => {
+            socket.to(socket.opponent).emit('moleSent')
         })
 
-        socket.on('won', opponent => {
-            console.log('winning');
-            socket.to(opponent).emit('won');
+        socket.on('won', () => {
+            console.log('Game over');
+            socket.to(socket.opponent).emit('won');
+            if (io.sockets.connected[socket.opponent]) {
+                io.sockets.connected[socket.opponent].opponent = null;
+            }
+            socket.opponent = null;        
         })
     });
 

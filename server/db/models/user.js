@@ -1,20 +1,15 @@
 const crypto = require('crypto')
 const Sequelize = require('sequelize')
-const db = require('../db')
+const db = require('../dbconnection.js');
 
 const User = db.define('user', {
-  email: {
+  username:{
     type: Sequelize.STRING,
     unique: true,
     allowNull: false,
     validate: {
       isEmail: true
     }
-  },
-  userName:{
-    type: Sequelize.STRING,
-    unique: true,
-    allowNull: false
   },
   password: {
     type: Sequelize.STRING,
@@ -29,8 +24,32 @@ const User = db.define('user', {
   },
   isLoggedIn:{
     type: Sequelize.BOOLEAN
+  },
+  challengeStatus:{
+    type:Sequelize.BOOLEAN,
+    defaultValue:false
+  },
+  highScoreSingle:{
+    type:Sequelize.INTEGER,
+    defaultValue: 0
+  },
+  averageSingle:{
+    type:Sequelize.VIRTUAL,
+    set: function (val) {
+      this.setDataValue('averageSingle', this.cumulativeScore/this.gamesPlayed)
+    }
+  },
+  gamesPlayed:{
+    type:Sequelize.INTEGER,
+    defaultValue: 0
+  },
+  cumulativeScore:{
+    type:Sequelize.INTEGER,
+    defaultValue:0
   }
 })
+
+module.exports = User;
 
 User.prototype.correctPassword = function (candidatePwd) {
   return User.encryptPassword(candidatePwd, this.salt) === this.password
@@ -57,5 +76,3 @@ const setSaltAndPassword = user => {
 
 User.beforeCreate(setSaltAndPassword)
 User.beforeUpdate(setSaltAndPassword)
-
-module.exports = User
