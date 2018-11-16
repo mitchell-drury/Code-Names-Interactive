@@ -94,7 +94,7 @@ input:focus {
 .message{
     text-align:center;
     font-size:1.5em;
-    width:calc(95%-30px);
+    width:calc (95%-30px);
     max-width:600px;
     margin:auto;
     padding:15px;
@@ -164,4 +164,20 @@ input:focus {
     top:120px;
     left: 45%;
     z-index:100;
+}
+
+/***********************Two Player*******************/
+#challenges{
+    text-align:center;
+    margin:auto;
+}
+#challengerList{
+    width:90%;
+    max-width:200px;
+    text-align:center;
+}
+.search {
+    width: 200px;
+    display:block;
+    margin:20px auto;
 }

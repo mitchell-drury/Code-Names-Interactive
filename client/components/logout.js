@@ -10,7 +10,7 @@ export default class Logout extends Component {
 
     logout (setLoggedIn) {
         Axios.post('/account/logout')
-        .then(function(response) {
+        .then(function () {
             setLoggedIn();
         });
     }

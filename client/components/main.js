@@ -3,77 +3,50 @@ import { BrowserRouter, Route, Switch, Link } from 'react-router-dom';
 import SinglePlayer from './singlePlayer.js';
 import TwoPlayer from './twoPlayer.js';
 import Home from './home.js';
+import io from 'socket.io-client'
+//require('react-lumberjack');
+
+const socket = io()
+
+socket.on('connect', () => {
+    console.log('Connected!, My Socket Id:', socket.id)
+})
 
 export default class Main extends Component {
     constructor () {
         super ();
 
         this.state = {
-            socket: {}
+            challengers: []
         }
     }
 
     componentDidMount () {
-        // this.setState({socket: connectToSite(this.insertMole, this.setGameState)})
+        socket.on('challenger', newChallenger => {           
+            if (!this.state.challengers.includes(newChallenger)){
+                this.setState(state => ({
+                    challengers: state.challengers.concat(newChallenger)}))
+            }
+        })
+
+        socket.on('challengeRescinded', formerChallenger => {
+            this.setState(state => ({
+                challengers: state.challengers.filter(challenger => challenger != formerChallenger)
+            }))
+        })
     }
 
-    // insertMole () {
-    //     let newMoles = this.state.moleLocations;
-    //     let openCells = [];
-    //     for (let i = 0; i < 5; i++) {
-    //         for (let j = 0; j < 5; j++){
-    //             if (!this.state.moleLocations[i][j]){
-    //                 openCells.push({i:i, j:j})
-    //             }
-    //         }
-    //     }
-    //     checkWinLoss();
-    //     if (openCells.length < 10){
-    //         this.setGameState('lost')
-    //         wonGame(this.state.socket);
-    //     } else {
-    //         let num = Math.floor(Math.random()*openCells.length);
-    //         newMoles[openCells[num].i][openCells[num].j] = true;
-    //         this.setState({moleLocations:newMoles})
-    //     }
-    // }
-
-    // checkWinLoss() {
-    //     if (this.state.gameMode === 'singlePlayer') {
-    //         if (openCells.length < 10) {
-    //             this.setGameState('lost');
-    //         }
-    //     }
-    // }
-
-    // setGameState (gameState) {
-    //     if (gameState === 'active') {
-    //         for (let i = 0; i < 10; i++){
-    //             this.insertMole();
-    //         }
-    //         this.setState({gameState: gameState})
-    //     } else {
-    //         this.setState({moleLocations:initialMoles, gameState: gameState})
-    //     }
-    //     console.log('after set game state', this.state.gameState, this.state.moleLocations)
-    // }
-
-    // whackMole (cellNumber) {
-    //     let newMoles = this.state.moleLocations;
-    //     newMoles[Math.floor(cellNumber/5)][(cellNumber+5)%5] = false;
-    //     this.setState({moleLocations: newMoles});
-    //     if (this.state.gameMode === 'twoPlayer'){
-    //         sendMole(this.state.socket);
-    //     }
-    // }
+    componentWillUnmount () {
+        console.log ('main unmounting')
+    }
 
     render () {
         return (
             <BrowserRouter>
                 <Switch>
-                    <Route exact path="/" component={Home}/>
-                    <Route exact path="/singleplayer" component={SinglePlayer}/>
-                    <Route exact path="/twoplayer" component={TwoPlayer}/>
+                    <Route exact path="/" render={() => <Home socket={socket}/>}/>
+                    <Route exact path="/singleplayer" render={() => <SinglePlayer socket={socket}/>}/>
+                    <Route exact path="/twoplayer" render={() => <TwoPlayer socket={socket} challengers={this.state.challengers}/>}/>
                 </Switch>
             </BrowserRouter> 
         )

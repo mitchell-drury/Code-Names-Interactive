@@ -11,8 +11,8 @@ export default class Login extends Component {
 
         this.handleUsernameChange = this.handleUsernameChange.bind(this);
         this.handlePasswordChange = this.handlePasswordChange.bind(this);
-        this.handleLogin = this.handleLogin.bind(this, props.setLoggedIn);
-        this.handleSignup = this.handleSignup.bind(this, props.setLoggedIn);
+        this.handleLogin = this.handleLogin.bind(this, props.setLoggedIn, props.socket);
+        this.handleSignup = this.handleSignup.bind(this, props.setLoggedIn, props.socket);
     }
 
     handleUsernameChange (event) {
@@ -25,24 +25,30 @@ export default class Login extends Component {
         this.setState({password: event.target.value});
     }
 
-    handleLogin (setLoggedIn, event) {
+    handleLogin (setLoggedIn, socket, event) {
         event.preventDefault();
         Axios.post('/account/login', {
             username: this.state.username,
             password: this.state.password
         }).then(function (response) {
             console.log('login message:', response);
+            if (response.data.username) {
+                socket.emit('login', response.data.username)
+            }
             setLoggedIn();
         })        
     }
 
-    handleSignup (setLoggedIn, event) {
+    handleSignup (setLoggedIn, socket, event) {
         event.preventDefault();
         Axios.post('/account/signup', {
             username: this.state.username,
             password: this.state.password
         }).then(function (response) {
             console.log('create message:', response);
+            if (response.data.username) {
+                socket.emit('login', response.data.username)
+            }           
             setLoggedIn();
         })
     }

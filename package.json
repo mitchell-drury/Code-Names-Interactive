@@ -16,6 +16,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "body-parser": "^1.18.2",
+    "connect-session-sequelize": "^6.0.0",
     "create-react-app": "^1.4.3",
     "express": "^4.16.2",
     "express-session": "^1.15.6",
@@ -28,6 +29,8 @@
     "prop-types": "^15.6.0",
     "react": "^16.1.0",
     "react-dom": "^16.1.0",
+    "react-log-state": "^0.1.0",
+    "react-lumberjack": "^2.0.0",
     "react-redux": "^5.0.6",
     "react-router": "^4.2.0",
     "react-router-dom": "^4.2.2",
@@ -35,6 +38,8 @@
     "redux-devtools-extension": "^2.13.2",
     "redux-logger": "^3.0.6",
     "sequelize": "^4.22.6",
+    "sequelize-session-store": "^0.1.0",
+    "sequelstore-connect": "^1.1.5",
     "session": "^0.1.0",
     "socketio": "^1.0.0",
     "webpack": "^2.2.1"

@@ -8,7 +8,7 @@ const Op = require('sequelize').Op;
 accountRouter.post('/login', function(req, res, next) {
     User.findOne({where: {
         username:{
-            [Op.eq]:req.body.username
+            [Op.eq]:req.body.username.toLowerCase()
         }
     }})
     .then(user => {
@@ -17,9 +17,6 @@ accountRouter.post('/login', function(req, res, next) {
         } else if (!user.correctPassword(req.body.password)) {
             res.send('Incorrect Password')
         } else {
-            user.update({
-                isLoggedIn:true
-            })
             req.login(user, err => (err ? next(err) : res.json(user)))
         }
     })
@@ -27,9 +24,8 @@ accountRouter.post('/login', function(req, res, next) {
 
 accountRouter.post('/signup', function(req, res, next) {
     User.create({
-        username:req.body.username,
-        password:req.body.password,
-        isLoggedIn: true
+        username:req.body.username.toLowerCase(),
+        password:req.body.password
     })
     .then(user => {
         req.login(user, err => (err ? next(err) : res.json(user)))
@@ -46,11 +42,9 @@ accountRouter.post('/signup', function(req, res, next) {
 })
 
 accountRouter.post('/authenticate', function(req, res, next) {
-    console.log(req.user);
     if (req.user) {
         res.send(true)
     } else {
-        console.log('flase');
         res.send(false);
     }
 })
@@ -64,7 +58,7 @@ accountRouter.post('/logout', function(req, res, next){
     })
     .then(user => {
         user.update({
-            isLoggedIn: false
+            socket: null
         })
     });
     req.logout();
@@ -72,10 +66,9 @@ accountRouter.post('/logout', function(req, res, next){
     res.redirect('/');
 })
 
-accountRouter.post('/updateChallengeStatus', function(req, res, next){
-    console.log('status: ', req.challengeStatus)
+accountRouter.post('/update', function(req, res, next){
     User.update(
-        {challengeStatus: req.challengeStatus},
+        {socket: req.socket},
         {where: {username: {
             [Op.eq]:req.user.username
         }}}

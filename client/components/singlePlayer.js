@@ -4,8 +4,8 @@ import Gameboard from './gameboard.js';
 import Axios from 'Axios';
 
 export default class SinglePlayer extends Component {
-    constructor () {
-        super ()
+    constructor (props) {
+        super (props)
         this.state = {
             gameState: 'firstGame',
             molesWhacked: 0,

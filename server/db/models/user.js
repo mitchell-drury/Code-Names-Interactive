@@ -25,6 +25,9 @@ const User = db.define('user', {
   isLoggedIn:{
     type: Sequelize.BOOLEAN
   },
+  socket:{
+    type:Sequelize.STRING
+  },
   challengeStatus:{
     type:Sequelize.BOOLEAN,
     defaultValue:false

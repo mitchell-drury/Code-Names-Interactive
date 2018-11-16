@@ -2,24 +2,21 @@ import React, {Component} from 'react';
 import { Route, Switch, Link } from 'react-router-dom';
 import Axios from 'Axios';
 import Gameboard from './gameboard';
-import io from 'socket.io-client'
-const socket = io(window.location.origin)
+import Challenges from './challenges';
+import Waiting from './waiting';
 
 export default class TwoPlayer extends Component {
-    constructor () {
-        super ()
+    constructor (props) {
+        super (props)
 
         this.state = {
             isLoggedIn: false,
-            challengeStatus: false,
             gameState: 'inactive',
             message: 'Welcome to the yard.',
             openSpaces: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
         }
-        this.setChallengeStatus = this.setChallengeStatus.bind(this, status);
-        this.searchOpponent = this.searchOpponent.bind(this);
+
         this.joinWaitingRoom = this.joinWaitingRoom.bind(this);
-        this.leaveWaitingRoom = this.leaveWaitingRoom.bind(this);
         this.whackMole = this.whackMole.bind(this);
         this.insertMole = this.insertMole.bind(this);
         this.initializeMoles = this.initializeMoles.bind(this);
@@ -29,24 +26,23 @@ export default class TwoPlayer extends Component {
 
     componentDidMount () {
         this.setLoggedIn();
-        socket.on('connect', () => {
-            console.log('Connected!, My Socket Id:', socket.id)
-        })
-        socket.on('joinedwaiting', msg => {
+        this.props.socket.on('opponentNotAvailable', msg => {
+            console.log(msg)
+        })        
+        this.props.socket.on('joinedwaiting', msg => {
             console.log(msg)
         })
-        socket.on('leftwaiting', msg => {
+        this.props.socket.on('leftwaiting', msg => {
             console.log(msg);
         })
-        socket.on('moleSent', () => {
+        this.props.socket.on('moleSent', () => {
             console.log('received mole')
             this.insertMole();
         })
-        socket.on('matched', () => {
+        this.props.socket.on('matched', () => {
             this.setGameState('active');
-            this.initializeMoles();
         })
-        socket.on('won', () => {
+        this.props.socket.on('won', () => {
             console.log('I won');
             this.setGameState('inactive', 'You won the match');
         })
@@ -59,31 +55,16 @@ export default class TwoPlayer extends Component {
         })
     }
 
-    setChallengeStatus(status){
-        console.log('challenge status: ', status);
-        Axios.post('/account/updateChallengeStatus', {challengeStatus: event.target.value})
-        .then(
-            this.setState({challengeStatus: status})
-        )
-    }
-
-    searchOpponent () {
-
-    }
-
     joinWaitingRoom () {
-        this.setState({gameState: 'waiting'});
-        socket.emit('join', 'waiting');
-        console.log(socket);
-    }
-
-    leaveWaitingRoom () {
-        this.setState({gameState: 'inactive'});
-        socket.emit('leave', 'waiting');
+        this.setGameState('waiting');
     }
 
     setGameState (gameState, message) {
-        this.setState({gameState: gameState, message: message})
+        this.setState({gameState: gameState, message: message}, () => {
+            if (gameState === 'active'){
+                this.initializeMoles();
+            }
+        })
     }
 
     whackMole (event) {
@@ -93,7 +74,7 @@ export default class TwoPlayer extends Component {
         this.setState({openSpaces: newOpenSpaces});
         console.log('mole whacked')
         //emit to opponent
-        socket.emit('sendMole', socket.opponent)
+        this.props.socket.emit('sendMole', this.props.socket.opponent)
     }
 
     insertMole () {
@@ -103,10 +84,9 @@ export default class TwoPlayer extends Component {
         newOpenSpaces.splice(newMoleIndex, 1);
         this.setState({openSpaces: newOpenSpaces});
         if (this.state.openSpaces.length < 11) {
-            socket.emit('won', socket.opponent);
+            this.props.socket.emit('won', this.props.socket.opponent);
             this.setState({gameState:'inactive', message:'You lost'})
         }
-        console.log('inserting mole');
     }
 
     initializeMoles () {
@@ -122,7 +102,7 @@ export default class TwoPlayer extends Component {
     render () {
         if (this.state.gameState === 'active'){
             return (
-                <Gameboard openSpaces={this.state.openSpaces} whackMole={this.whackMole}> </Gameboard>
+                <Gameboard socket={this.props.socket} openSpaces={this.state.openSpaces} whackMole={this.whackMole}> </Gameboard>
             )
         } else if (this.state.gameState === 'inactive'){
             if (this.state.isLoggedIn) {
@@ -131,14 +111,9 @@ export default class TwoPlayer extends Component {
                         <div className='message'> 
                             {this.state.message}
                         </div>
+                        <Challenges socket={this.props.socket} challengers={this.props.challengers}/>
                         <div className='button' onClick={this.joinWaitingRoom}> Random Opponent </div>
-                        <form>
-                            <input type='text' placeholder='Opponent user name'/>
-                        
-                            <button type='submit' className='button' onClick={this.searchOpponent}> Send Challenge </button>
-                        </form>
-                        <div className='button' onClick={this.setChallengeStatus} > Accept Challenges </div>
-                         <Link className='button' to='/'> Home </Link>
+                        <Link className='button' to='/'> Home </Link>
                     </div>
                 )
             } else {
@@ -154,13 +129,7 @@ export default class TwoPlayer extends Component {
             }
         } else if (this.state.gameState === 'waiting') {
             return (
-                <div>
-                    <div className='message'> Waiting for an opponent to match.
-                    </div>
-                    <div className='button' onClick={this.leaveWaitingRoom}>
-                        Quit
-                    </div>
-                </div>
+                <Waiting socket={this.props.socket} setGameState={this.setGameState}/>
             )
         }
     }
