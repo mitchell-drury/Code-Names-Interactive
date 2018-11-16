@@ -6816,6 +6816,10 @@ var _socket = __webpack_require__(152);
 
 var _socket2 = _interopRequireDefault(_socket);
 
+var _Axios = __webpack_require__(9);
+
+var _Axios2 = _interopRequireDefault(_Axios);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -6823,8 +6827,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-//require('react-lumberjack');
 
 var socket = (0, _socket2.default)();
 
@@ -6841,8 +6843,12 @@ var Main = function (_Component) {
         var _this = _possibleConstructorReturn(this, (Main.__proto__ || Object.getPrototypeOf(Main)).call(this));
 
         _this.state = {
-            challengers: []
+            challengers: [],
+            loggedIn: false,
+            authenticating: true
         };
+
+        _this.setLoggedInStatus = _this.setLoggedInStatus.bind(_this);
         return _this;
     }
 
@@ -6850,6 +6856,10 @@ var Main = function (_Component) {
         key: 'componentDidMount',
         value: function componentDidMount() {
             var _this2 = this;
+
+            _Axios2.default.post('/account/authenticate').then(function (response) {
+                _this2.setState({ loggedIn: response.data.userLoggedIn, authenticating: false });
+            });
 
             socket.on('challenger', function (newChallenger) {
                 if (!_this2.state.challengers.includes(newChallenger)) {
@@ -6869,31 +6879,36 @@ var Main = function (_Component) {
                     };
                 });
             });
+
+            this.setLoggedInStatus = this.setLoggedInStatus.bind(this);
         }
     }, {
         key: 'componentWillUnmount',
-        value: function componentWillUnmount() {
-            console.log('main unmounting');
+        value: function componentWillUnmount() {}
+    }, {
+        key: 'setLoggedInStatus',
+        value: function setLoggedInStatus(status) {
+            this.setState({ loggedIn: status });
         }
     }, {
         key: 'render',
         value: function render() {
             var _this3 = this;
 
-            return _react2.default.createElement(
+            return !this.state.authenticating && _react2.default.createElement(
                 _reactRouterDom.BrowserRouter,
                 null,
                 _react2.default.createElement(
                     _reactRouterDom.Switch,
                     null,
                     _react2.default.createElement(_reactRouterDom.Route, { exact: true, path: '/', render: function render() {
-                            return _react2.default.createElement(_home2.default, { socket: socket });
+                            return _react2.default.createElement(_home2.default, { socket: socket, loggedIn: _this3.state.loggedIn, setLoggedInStatus: _this3.setLoggedInStatus });
                         } }),
                     _react2.default.createElement(_reactRouterDom.Route, { exact: true, path: '/singleplayer', render: function render() {
                             return _react2.default.createElement(_singlePlayer2.default, { socket: socket });
                         } }),
                     _react2.default.createElement(_reactRouterDom.Route, { exact: true, path: '/twoplayer', render: function render() {
-                            return _react2.default.createElement(_twoPlayer2.default, { socket: socket, challengers: _this3.state.challengers });
+                            return _react2.default.createElement(_twoPlayer2.default, { socket: socket, challengers: _this3.state.challengers, loggedIn: _this3.state.loggedIn, setLoggedInStatus: _this3.setLoggedInStatus });
                         } })
                 )
             );
@@ -8072,10 +8087,6 @@ var _logout = __webpack_require__(92);
 
 var _logout2 = _interopRequireDefault(_logout);
 
-var _Axios = __webpack_require__(9);
-
-var _Axios2 = _interopRequireDefault(_Axios);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -8090,34 +8101,16 @@ var Home = function (_Component) {
     function Home(props) {
         _classCallCheck(this, Home);
 
-        var _this = _possibleConstructorReturn(this, (Home.__proto__ || Object.getPrototypeOf(Home)).call(this, props));
-
-        _this.state = {
-            isLoggedIn: false
-        };
-
-        _this.setLoggedIn = _this.setLoggedIn.bind(_this);
-        return _this;
+        return _possibleConstructorReturn(this, (Home.__proto__ || Object.getPrototypeOf(Home)).call(this, props));
     }
 
     _createClass(Home, [{
         key: 'componentDidMount',
-        value: function componentDidMount() {
-            this.setLoggedIn();
-        }
-    }, {
-        key: 'setLoggedIn',
-        value: function setLoggedIn() {
-            var _this2 = this;
-
-            _Axios2.default.post('/account/authenticate').then(function (isLoggedIn) {
-                _this2.setState({ isLoggedIn: isLoggedIn.data });
-            });
-        }
+        value: function componentDidMount() {}
     }, {
         key: 'render',
         value: function render() {
-            if (!this.state.isLoggedIn) {
+            if (!this.props.loggedIn) {
                 return _react2.default.createElement(
                     'div',
                     { id: 'home' },
@@ -8128,7 +8121,7 @@ var Home = function (_Component) {
                     ),
                     _react2.default.createElement(
                         _login2.default,
-                        { setLoggedIn: this.setLoggedIn, socket: this.props.socket },
+                        { setLoggedInStatus: this.props.setLoggedInStatus, socket: this.props.socket },
                         ' '
                     )
                 );
@@ -8143,7 +8136,7 @@ var Home = function (_Component) {
                     ),
                     _react2.default.createElement(
                         _logout2.default,
-                        { setLoggedIn: this.setLoggedIn },
+                        { setLoggedInStatus: this.props.setLoggedInStatus },
                         ' '
                     )
                 );
@@ -8195,13 +8188,14 @@ var Login = function (_Component) {
 
         _this.state = {
             username: '',
-            password: ''
+            password: '',
+            loginSignupMessage: ''
         };
 
         _this.handleUsernameChange = _this.handleUsernameChange.bind(_this);
         _this.handlePasswordChange = _this.handlePasswordChange.bind(_this);
-        _this.handleLogin = _this.handleLogin.bind(_this, props.setLoggedIn, props.socket);
-        _this.handleSignup = _this.handleSignup.bind(_this, props.setLoggedIn, props.socket);
+        _this.handleLogin = _this.handleLogin.bind(_this, props.socket);
+        _this.handleSignup = _this.handleSignup.bind(_this, props.socket);
         return _this;
     }
 
@@ -8219,33 +8213,51 @@ var Login = function (_Component) {
         }
     }, {
         key: 'handleLogin',
-        value: function handleLogin(setLoggedIn, socket, event) {
+        value: function handleLogin(socket, event) {
+            var _this2 = this;
+
             event.preventDefault();
-            _Axios2.default.post('/account/login', {
-                username: this.state.username,
-                password: this.state.password
-            }).then(function (response) {
-                console.log('login message:', response);
-                if (response.data.username) {
-                    socket.emit('login', response.data.username);
-                }
-                setLoggedIn();
-            });
+            if (this.state.username != '' && this.state.password != '') {
+                _Axios2.default.post('/account/login', {
+                    username: this.state.username,
+                    password: this.state.password
+                }).then(function (response) {
+                    console.log('login: ', response);
+                    if (response.data.error) {
+                        _this2.setState({ loginSignupMessage: response.data.error });
+                    }
+                    if (response.data.username) {
+                        socket.emit('login', response.data.username);
+                        _this2.props.setLoggedInStatus(true);
+                    }
+                });
+            }
         }
     }, {
         key: 'handleSignup',
-        value: function handleSignup(setLoggedIn, socket, event) {
+        value: function handleSignup(socket, event) {
+            var _this3 = this;
+
             event.preventDefault();
-            _Axios2.default.post('/account/signup', {
-                username: this.state.username,
-                password: this.state.password
-            }).then(function (response) {
-                console.log('create message:', response);
-                if (response.data.username) {
-                    socket.emit('login', response.data.username);
-                }
-                setLoggedIn();
-            });
+            if (this.state.username != '' && this.state.password != '') {
+                _Axios2.default.post('/account/signup', {
+                    username: this.state.username,
+                    password: this.state.password
+                }).then(function (response) {
+                    console.log('create message:', response);
+                    if (response.data.error) {
+                        _this3.setState({ loginSignupMessage: response.data.error });
+                    }
+                    if (response.data.username) {
+                        socket.emit('login', response.data.username);
+                    }
+                });
+            }
+        }
+    }, {
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+            console.log('login props: ', this.props);
         }
     }, {
         key: 'render',
@@ -8268,6 +8280,11 @@ var Login = function (_Component) {
                         { id: 'signup', className: 'button', type: 'submit', onClick: this.handleSignup },
                         ' Signup '
                     )
+                ),
+                _react2.default.createElement(
+                    'div',
+                    { id: 'loginMessage' },
+                    this.state.loginMessage
                 )
             );
         }
@@ -8313,17 +8330,19 @@ var Logout = function (_Component) {
     function Logout(props) {
         _classCallCheck(this, Logout);
 
-        var _this = _possibleConstructorReturn(this, (Logout.__proto__ || Object.getPrototypeOf(Logout)).call(this));
+        var _this = _possibleConstructorReturn(this, (Logout.__proto__ || Object.getPrototypeOf(Logout)).call(this, props));
 
-        _this.logout = _this.logout.bind(_this, props.setLoggedIn);
+        _this.logout = _this.logout.bind(_this);
         return _this;
     }
 
     _createClass(Logout, [{
         key: 'logout',
-        value: function logout(setLoggedIn) {
+        value: function logout() {
+            var _this2 = this;
+
             _Axios2.default.post('/account/logout').then(function () {
-                setLoggedIn();
+                _this2.props.setLoggedInStatus(false);
             });
         }
     }, {
@@ -8630,7 +8649,6 @@ var TwoPlayer = function (_Component) {
         var _this = _possibleConstructorReturn(this, (TwoPlayer.__proto__ || Object.getPrototypeOf(TwoPlayer)).call(this, props));
 
         _this.state = {
-            isLoggedIn: false,
             gameState: 'inactive',
             message: 'Welcome to the yard.',
             openSpaces: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
@@ -8641,7 +8659,6 @@ var TwoPlayer = function (_Component) {
         _this.insertMole = _this.insertMole.bind(_this);
         _this.initializeMoles = _this.initializeMoles.bind(_this);
         _this.setGameState = _this.setGameState.bind(_this);
-        _this.setLoggedIn = _this.setLoggedIn.bind(_this);
         return _this;
     }
 
@@ -8650,7 +8667,6 @@ var TwoPlayer = function (_Component) {
         value: function componentDidMount() {
             var _this2 = this;
 
-            this.setLoggedIn();
             this.props.socket.on('opponentNotAvailable', function (msg) {
                 console.log(msg);
             });
@@ -8672,15 +8688,14 @@ var TwoPlayer = function (_Component) {
                 _this2.setGameState('inactive', 'You won the match');
             });
         }
-    }, {
-        key: 'setLoggedIn',
-        value: function setLoggedIn() {
-            var _this3 = this;
 
-            _Axios2.default.post('/account/authenticate').then(function (isLoggedIn) {
-                _this3.setState({ isLoggedIn: isLoggedIn.data });
-            });
-        }
+        // setLoggedIn () {
+        //     Axios.post('/account/authenticate')
+        //     .then(isLoggedIn => {
+        //         this.setState({isLoggedIn: isLoggedIn.data})
+        //     })
+        // }
+
     }, {
         key: 'joinWaitingRoom',
         value: function joinWaitingRoom() {
@@ -8689,11 +8704,11 @@ var TwoPlayer = function (_Component) {
     }, {
         key: 'setGameState',
         value: function setGameState(gameState, message) {
-            var _this4 = this;
+            var _this3 = this;
 
             this.setState({ gameState: gameState, message: message }, function () {
                 if (gameState === 'active') {
-                    _this4.initializeMoles();
+                    _this3.initializeMoles();
                 }
             });
         }
@@ -8742,7 +8757,7 @@ var TwoPlayer = function (_Component) {
                     ' '
                 );
             } else if (this.state.gameState === 'inactive') {
-                if (this.state.isLoggedIn) {
+                if (this.props.loggedIn) {
                     return _react2.default.createElement(
                         'div',
                         null,

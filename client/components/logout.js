@@ -3,15 +3,15 @@ import Axios from 'Axios';
 
 export default class Logout extends Component {
     constructor (props) {
-        super ();
+        super (props);
 
-        this.logout = this.logout.bind(this, props.setLoggedIn);
+        this.logout = this.logout.bind(this);
     }
 
-    logout (setLoggedIn) {
+    logout () {
         Axios.post('/account/logout')
-        .then(function () {
-            setLoggedIn();
+        .then(() =>  {
+            this.props.setLoggedInStatus(false);
         });
     }
 

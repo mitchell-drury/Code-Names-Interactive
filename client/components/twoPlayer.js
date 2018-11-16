@@ -10,7 +10,6 @@ export default class TwoPlayer extends Component {
         super (props)
 
         this.state = {
-            isLoggedIn: false,
             gameState: 'inactive',
             message: 'Welcome to the yard.',
             openSpaces: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
@@ -21,11 +20,9 @@ export default class TwoPlayer extends Component {
         this.insertMole = this.insertMole.bind(this);
         this.initializeMoles = this.initializeMoles.bind(this);
         this.setGameState = this.setGameState.bind(this);
-        this.setLoggedIn = this.setLoggedIn.bind(this);
     }
 
     componentDidMount () {
-        this.setLoggedIn();
         this.props.socket.on('opponentNotAvailable', msg => {
             console.log(msg)
         })        
@@ -48,12 +45,12 @@ export default class TwoPlayer extends Component {
         })
     }
 
-    setLoggedIn () {
-        Axios.post('/account/authenticate')
-        .then(isLoggedIn => {
-            this.setState({isLoggedIn: isLoggedIn.data})
-        })
-    }
+    // setLoggedIn () {
+    //     Axios.post('/account/authenticate')
+    //     .then(isLoggedIn => {
+    //         this.setState({isLoggedIn: isLoggedIn.data})
+    //     })
+    // }
 
     joinWaitingRoom () {
         this.setGameState('waiting');
@@ -105,7 +102,7 @@ export default class TwoPlayer extends Component {
                 <Gameboard socket={this.props.socket} openSpaces={this.state.openSpaces} whackMole={this.whackMole}> </Gameboard>
             )
         } else if (this.state.gameState === 'inactive'){
-            if (this.state.isLoggedIn) {
+            if (this.props.loggedIn) {
                 return (
                     <div> 
                         <div className='message'> 

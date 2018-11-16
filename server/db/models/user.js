@@ -6,10 +6,7 @@ const User = db.define('user', {
   username:{
     type: Sequelize.STRING,
     unique: true,
-    allowNull: false,
-    validate: {
-      isEmail: true
-    }
+    allowNull: false
   },
   password: {
     type: Sequelize.STRING,
@@ -21,16 +18,6 @@ const User = db.define('user', {
   },
   salt: {
     type: Sequelize.STRING
-  },
-  isLoggedIn:{
-    type: Sequelize.BOOLEAN
-  },
-  socket:{
-    type:Sequelize.STRING
-  },
-  challengeStatus:{
-    type:Sequelize.BOOLEAN,
-    defaultValue:false
   },
   highScoreSingle:{
     type:Sequelize.INTEGER,

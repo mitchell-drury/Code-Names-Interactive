@@ -13,9 +13,9 @@ accountRouter.post('/login', function(req, res, next) {
     }})
     .then(user => {
         if (!user) {
-            res.send('User not found')
+            res.send({error: 'No such user'})
         } else if (!user.correctPassword(req.body.password)) {
-            res.send('Incorrect Password')
+            res.send({error: 'Incorrect password'})
         } else {
             req.login(user, err => (err ? next(err) : res.json(user)))
         }
@@ -32,9 +32,7 @@ accountRouter.post('/signup', function(req, res, next) {
     })
     .catch(err => {
         if (err.name === 'SequelizeUniqueConstraintError') {
-            res.send('User already exists')
-        } else if (err.name === 'SequelizeValidationError') {
-            res.send('Invalid Email Address')
+            res.send({error: 'User already exists'})
         } else {
             console.log(err)
         }
@@ -43,24 +41,14 @@ accountRouter.post('/signup', function(req, res, next) {
 
 accountRouter.post('/authenticate', function(req, res, next) {
     if (req.user) {
-        res.send(true)
+        res.send({userLoggedIn: true})
     } else {
-        res.send(false);
+        res.send({userLoggedIn: false});
     }
 })
 
 accountRouter.post('/logout', function(req, res, next){
     console.log('logout req:', req.user)
-    User.findOne({where: 
-        {username:
-            {[Op.eq]:req.user.username}
-        }
-    })
-    .then(user => {
-        user.update({
-            socket: null
-        })
-    });
     req.logout();
     req.session.destroy();
     res.redirect('/');
