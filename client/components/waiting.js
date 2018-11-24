@@ -22,7 +22,7 @@ export default class Waiting extends Component {
 
     render () {
         return (
-            <div>
+            <div id="waiting">
                 <div className='message'> Waiting for an opponent to match.
                 </div>
                 <div className='button' onClick={this.leaveWaitingRoom}>

@@ -8014,7 +8014,7 @@ var challenges = function (_Component) {
                     _react2.default.createElement('input', { className: 'search', type: 'text', placeholder: 'Opponent user name', onChange: this.handleOpponentText }),
                     _react2.default.createElement(
                         'button',
-                        { type: 'submit', className: 'button', onClick: this.sendChallenge },
+                        { id: 'sendChallenge', type: 'submit', className: 'button', onClick: this.sendChallenge },
                         ' Send Challenge'
                     ),
                     _react2.default.createElement(
@@ -8040,7 +8040,7 @@ var challenges = function (_Component) {
                         ),
                         _react2.default.createElement(
                             'button',
-                            { type: 'submit', className: 'button', onClick: this.acceptChallenge },
+                            { id: 'acceptChallenge', type: 'submit', className: 'button', onClick: this.acceptChallenge },
                             'Accept Challenge'
                         )
                     )
@@ -8223,7 +8223,9 @@ var Login = function (_Component) {
                         _this2.setState({ loginSignupMessage: response.data.error });
                     }
                     if (response.data.username) {
+                        //add them to the connected users object on the server socket
                         socket.emit('login', response.data.username);
+
                         _this2.props.setLoggedInStatus(true);
                     }
                 });
@@ -8246,6 +8248,7 @@ var Login = function (_Component) {
                     }
                     if (response.data.username) {
                         socket.emit('login', response.data.username);
+                        _this3.props.setLoggedInStatus(true);
                     }
                 });
             }
@@ -8280,7 +8283,7 @@ var Login = function (_Component) {
                 _react2.default.createElement(
                     'div',
                     { id: 'loginMessage' },
-                    this.state.loginMessage
+                    this.state.loginSignupMessage
                 )
             );
         }
@@ -8757,7 +8760,7 @@ var TwoPlayer = function (_Component) {
                 if (this.props.loggedIn) {
                     return _react2.default.createElement(
                         'div',
-                        null,
+                        { id: 'twoPlayer' },
                         _react2.default.createElement(
                             'div',
                             { className: 'message' },
@@ -8778,7 +8781,7 @@ var TwoPlayer = function (_Component) {
                 } else {
                     return _react2.default.createElement(
                         'div',
-                        null,
+                        { id: 'twoPlayer' },
                         _react2.default.createElement(
                             'div',
                             { className: 'message' },
@@ -8865,7 +8868,7 @@ var Waiting = function (_Component) {
         value: function render() {
             return _react2.default.createElement(
                 'div',
-                null,
+                { id: 'waiting' },
                 _react2.default.createElement(
                     'div',
                     { className: 'message' },

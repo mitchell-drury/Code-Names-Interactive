@@ -34,6 +34,7 @@ accountRouter.post('/signup', function(req, res, next) {
         if (err.name === 'SequelizeUniqueConstraintError') {
             res.send({error: 'User already exists'})
         } else {
+            res.send({'error': 'There was a deep problem, and we\'re working on it :)'})
             console.log(err)
         }
     })

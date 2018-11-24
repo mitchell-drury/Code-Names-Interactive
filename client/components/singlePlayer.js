@@ -89,7 +89,7 @@ export default class SinglePlayer extends Component {
     render () {
         if (this.state.gameState === 'firstGame') {
             return (
-                <div id='singlePlayer'>
+                <div id="singlePlayer">
                     <div id='startInstructions' className='message'> 
                         Whack the moles as they appear! 
                     </div>
@@ -101,7 +101,7 @@ export default class SinglePlayer extends Component {
             )
         } else {
             return (
-                <div id='singlePlayer'>
+                <div id="singlePlayer">
                     <div className='message'> 
                         The moles have over run your yard! You whacked {this.state.molesWhacked} moles.
                     </div>

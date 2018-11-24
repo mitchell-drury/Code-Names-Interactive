@@ -38,7 +38,9 @@ export default class Login extends Component {
                     this.setState({loginSignupMessage: response.data.error});
                 }                
                 if (response.data.username) {
+                    //add them to the connected users object on the server socket
                     socket.emit('login', response.data.username)
+                    
                     this.props.setLoggedInStatus(true)
                 }
             }) 
@@ -58,6 +60,7 @@ export default class Login extends Component {
                 }                
                 if (response.data.username) {
                     socket.emit('login', response.data.username)
+                    this.props.setLoggedInStatus(true)
                 }           
             })
         }
@@ -77,7 +80,7 @@ export default class Login extends Component {
                     <button id="signup" className='button' type="submit" onClick={this.handleSignup}> Signup </button>
                 </form>
                 <div id='loginMessage'>
-                    {this.state.loginMessage}
+                    {this.state.loginSignupMessage}
                 </div>
             </div>
         )

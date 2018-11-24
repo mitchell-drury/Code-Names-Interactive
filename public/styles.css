@@ -50,7 +50,7 @@ input:focus {
 }
 
 /******************** HOME **********************/
-#home {
+#home, #twoPlayer, #waiting, #singlePlayer {
     margin:auto;
     text-align: center;
     width: 80%;
@@ -173,11 +173,20 @@ input:focus {
 }
 #challengerList{
     width:90%;
-    max-width:200px;
     text-align:center;
 }
 .search {
-    width: 200px;
     display:block;
-    margin:20px auto;
+    width: 90%;
+    margin:40px auto 0 auto;
+}
+
+#sendChallenge {
+    width:100%;
+    margin: 0 auto 40px auto;
+}
+
+#acceptChallenge {
+    width:100%;
+    margin: 0 auto 40px auto;
 }

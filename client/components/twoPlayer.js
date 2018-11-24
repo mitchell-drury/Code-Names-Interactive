@@ -104,7 +104,7 @@ export default class TwoPlayer extends Component {
         } else if (this.state.gameState === 'inactive'){
             if (this.props.loggedIn) {
                 return (
-                    <div> 
+                    <div id="twoPlayer"> 
                         <div className='message'> 
                             {this.state.message}
                         </div>
@@ -115,7 +115,7 @@ export default class TwoPlayer extends Component {
                 )
             } else {
                 return (
-                    <div>
+                    <div id="twoPlayer">
                         <div className='message'> 
                             {this.state.message}
                         </div>
