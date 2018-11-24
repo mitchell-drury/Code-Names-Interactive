@@ -7950,7 +7950,7 @@ var challenges = function (_Component) {
                     challengeExtended: true,
                     challenge: challenge,
                     opponentText: '',
-                    challenger: ''
+                    selectedChallenger: ''
                 });
             });
         }
@@ -7982,7 +7982,7 @@ var challenges = function (_Component) {
         key: 'handleChallengerChange',
         value: function handleChallengerChange(event) {
             this.setState({
-                challenger: event.target.value
+                selectedChallenger: event.target.value
             });
         }
     }, {
@@ -7990,7 +7990,7 @@ var challenges = function (_Component) {
         value: function acceptChallenge() {
             //check to make sure at least a challenger has been selected
             if (this.state.challenger != '') {
-                this.props.socket.emit('challengeAccepted', this.state.challenger);
+                this.props.socket.emit('challengeAccepted', this.state.selectedChallenger);
             }
         }
     }, {

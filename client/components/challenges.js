@@ -24,7 +24,7 @@ export default class challenges extends Component {
                 challengeExtended: true,
                 challenge: challenge,
                 opponentText: '',
-                challenger: ''
+                selectedChallenger: ''
             })
         })
     }
@@ -51,14 +51,14 @@ export default class challenges extends Component {
 
     handleChallengerChange (event) {
         this.setState({
-            challenger: event.target.value
+            selectedChallenger: event.target.value
         })
     }
 
     acceptChallenge () {
         //check to make sure at least a challenger has been selected
         if (this.state.challenger != ''){
-            this.props.socket.emit('challengeAccepted', this.state.challenger)
+            this.props.socket.emit('challengeAccepted', this.state.selectedChallenger)
         }
     }
 
