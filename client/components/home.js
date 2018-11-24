@@ -23,7 +23,7 @@ export default class Home extends Component {
             return (
                 <div id="home"> 
                     <PlayModes> </PlayModes>
-                    <Logout setLoggedInStatus={this.props.setLoggedInStatus}> </Logout>
+                    <Logout setLoggedInStatus={this.props.setLoggedInStatus} socket={this.props.socket}> </Logout>
                 </div>                
             )
         }

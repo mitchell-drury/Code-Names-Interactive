@@ -13,6 +13,7 @@ export default class Logout extends Component {
         .then(() =>  {
             this.props.setLoggedInStatus(false);
         });
+        this.props.socket.emit('logout')
     }
 
     render () {

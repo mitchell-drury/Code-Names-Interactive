@@ -30,7 +30,7 @@ export default class challenges extends Component {
     }
 
     componentWillUnmount () {
-        this.props.socket.emit('rescindChallenge', this.state.opponent)
+        this.props.socket.emit('rescindChallenge', this.state.actualOpponent)
     }
 
     handleOpponentText (event) {

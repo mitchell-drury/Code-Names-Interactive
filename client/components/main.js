@@ -39,6 +39,7 @@ export default class Main extends Component {
         })
 
         socket.on('challengeRescinded', formerChallenger => {
+            console.log('challnge receindd from: ', formerChallenger)
             this.setState(state => ({
                 challengers: state.challengers.filter(challenger => challenger != formerChallenger)
             }))

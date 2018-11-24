@@ -6871,6 +6871,7 @@ var Main = function (_Component) {
             });
 
             socket.on('challengeRescinded', function (formerChallenger) {
+                console.log('challnge receindd from: ', formerChallenger);
                 _this2.setState(function (state) {
                     return {
                         challengers: state.challengers.filter(function (challenger) {
@@ -7955,7 +7956,7 @@ var challenges = function (_Component) {
     }, {
         key: 'componentWillUnmount',
         value: function componentWillUnmount() {
-            this.props.socket.emit('rescindChallenge', this.state.opponent);
+            this.props.socket.emit('rescindChallenge', this.state.actualOpponent);
         }
     }, {
         key: 'handleOpponentText',
@@ -8136,7 +8137,7 @@ var Home = function (_Component) {
                     ),
                     _react2.default.createElement(
                         _logout2.default,
-                        { setLoggedInStatus: this.props.setLoggedInStatus },
+                        { setLoggedInStatus: this.props.setLoggedInStatus, socket: this.props.socket },
                         ' '
                     )
                 );
@@ -8219,8 +8220,8 @@ var Login = function (_Component) {
             event.preventDefault();
             if (this.state.username != '' && this.state.password != '') {
                 _Axios2.default.post('/account/login', {
-                    username: this.state.username,
-                    password: this.state.password
+                    username: this.state.username.trim(),
+                    password: this.state.password.trim()
                 }).then(function (response) {
                     console.log('login: ', response);
                     if (response.data.error) {
@@ -8241,8 +8242,8 @@ var Login = function (_Component) {
             event.preventDefault();
             if (this.state.username != '' && this.state.password != '') {
                 _Axios2.default.post('/account/signup', {
-                    username: this.state.username,
-                    password: this.state.password
+                    username: this.state.username.trim(),
+                    password: this.state.password.trim()
                 }).then(function (response) {
                     console.log('create message:', response);
                     if (response.data.error) {
@@ -8344,6 +8345,7 @@ var Logout = function (_Component) {
             _Axios2.default.post('/account/logout').then(function () {
                 _this2.props.setLoggedInStatus(false);
             });
+            this.props.socket.emit('logout');
         }
     }, {
         key: 'render',

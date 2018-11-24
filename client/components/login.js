@@ -30,8 +30,8 @@ export default class Login extends Component {
         event.preventDefault();
         if (this.state.username != '' && this.state.password != '') {
             Axios.post('/account/login', {
-                username: this.state.username,
-                password: this.state.password
+                username: this.state.username.trim(),
+                password: this.state.password.trim()
             }).then(response => {
                 console.log('login: ', response)
                 if (response.data.error) {
@@ -49,8 +49,8 @@ export default class Login extends Component {
         event.preventDefault();
         if (this.state.username != '' && this.state.password != '') {
             Axios.post('/account/signup', {
-                username: this.state.username,
-                password: this.state.password
+                username: this.state.username.trim(),
+                password: this.state.password.trim()
             }).then(response => {
                 console.log('create message:', response);
                 if (response.data.error) {

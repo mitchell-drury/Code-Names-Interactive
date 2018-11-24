@@ -13,9 +13,6 @@ module.exports = io => {
             console.log('connected: ', connectedUsers)
         }
         socket.on('disconnect', function() {
-            //remove from connecteduser object
-            delete connectedUsers[socket.username];
-
             //remove from random waitlist
             removeFromWaitlist(socket.id);
 
@@ -24,7 +21,16 @@ module.exports = io => {
             if (io.sockets.connected[socket.opponent]){
                 io.sockets.connected[socket.opponent].opponent = null;
             }
-            socket.opponent = null;
+
+            //rescind challenge if one had been extended
+            if (socket.challenge){
+                console.log('rescending on disconnect: ', socket.challenge, socket.id)
+                socket.to(connectedUsers[socket.challenge]).emit('challengeRescinded', socket.request.session.passport.user.username)
+            }
+            
+            //remove from connectedUser object
+            delete connectedUsers[socket.username];
+
         })
         socket.on('login', username => {
             socket.username = username;
@@ -32,16 +38,17 @@ module.exports = io => {
             console.log('logged in socket: ', socket.id, socket.username)
         })
 
-        socket.on('challenge', opponent => {
-            if (connectedUsers[opponent]){
-                //emit challenge to the opponent
-                io.to(connectedUsers[opponent]).emit('challenger', io.sockets.connected[socket.id].username)
+        socket.on('challenge', challenge => {
+            if (connectedUsers[challenge]){
+                //emit challenge
+                io.to(connectedUsers[challenge]).emit('challenger', io.sockets.connected[socket.id].username)
+                socket.challenge = challenge;
                 
                 //emit back to sender that it was sent
-                io.to(socket.id).emit('challengeSent', opponent)
+                io.to(socket.id).emit('challengeSent', challenge)
             } else {
                 //emit back to sender if opponent not available
-                io.to(socket.id).emit('opponentNotAvailable', 'opponent not available')
+                io.to(socket.id).emit('opponentNotAvailable', 'Opponent not logged in')
             }
         })
 
