@@ -120,7 +120,7 @@ export default class TwoPlayer extends Component {
                             {this.state.message}
                         </div>
                         <div className='button' onClick={this.joinWaitingRoom}> Random Opponent </div>
-                       <Link className='button' to='/'> Home </Link>
+                        <Link className='button' to='/'> Home </Link>
                     </div>
                 )
             }

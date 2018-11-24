@@ -8002,7 +8002,7 @@ var challenges = function (_Component) {
                     'Awaiting opponent',
                     _react2.default.createElement(
                         'button',
-                        { className: 'button', onClick: this.rescindChallenge },
+                        { type: 'submit', className: 'button', onClick: this.rescindChallenge },
                         ' Rescind Challenge '
                     )
                 );
@@ -8012,7 +8012,7 @@ var challenges = function (_Component) {
                     { id: 'challenges' },
                     _react2.default.createElement('input', { className: 'search', type: 'text', placeholder: 'Opponent user name', onChange: this.handleOpponentText }),
                     _react2.default.createElement(
-                        'div',
+                        'button',
                         { type: 'submit', className: 'button', onClick: this.sendChallenge },
                         ' Send Challenge'
                     ),
@@ -8038,8 +8038,8 @@ var challenges = function (_Component) {
                             })
                         ),
                         _react2.default.createElement(
-                            'div',
-                            { className: 'button', onClick: this.acceptChallenge },
+                            'button',
+                            { type: 'submit', className: 'button', onClick: this.acceptChallenge },
                             'Accept Challenge'
                         )
                     )

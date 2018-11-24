@@ -67,7 +67,7 @@ export default class challenges extends Component {
             return (
                 <div>
                     Awaiting opponent
-                    <button className='button' onClick={this.rescindChallenge} > Rescind Challenge </button>
+                    <button type='submit' className='button' onClick={this.rescindChallenge} > Rescind Challenge </button>
                 </div>
             )
         } else {
@@ -75,8 +75,8 @@ export default class challenges extends Component {
                 <div id='challenges'>
                     <input className='search' type='text' placeholder='Opponent user name' onChange={this.handleOpponentText}/>
                 
-                    <div type='submit' className='button' onClick={this.sendChallenge} > Send Challenge 
-                    </div>
+                    <button type='submit' className='button' onClick={this.sendChallenge} > Send Challenge 
+                    </button>
                     <div>
                         <select id='challengerList' size={10} onChange={this.handleChallengerChange}>
                             <option disabled>Challengers</option>
@@ -84,9 +84,9 @@ export default class challenges extends Component {
                                 return (<option key={i}> {challenger} </option>);
                             })}
                         </select>
-                        <div className='button' onClick={this.acceptChallenge}>
+                        <button type='submit' className='button' onClick={this.acceptChallenge}>
                             Accept Challenge
-                        </div>
+                        </button>
                     </div>
                 </div>
             )
