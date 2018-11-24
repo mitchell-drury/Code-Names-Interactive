@@ -38,12 +38,10 @@ export default class challenges extends Component {
     }
 
     sendChallenge (event) {
-        event.preventDefault();
         this.props.socket.emit('challenge', this.state.opponentText);
     }
 
     rescindChallenge (event) {
-        event.preventDefault();
         this.props.socket.emit('rescindChallenge', this.state.actualOpponent)
         this.setState({
             challengeExtended: false,
@@ -75,11 +73,10 @@ export default class challenges extends Component {
         } else {
             return (
                 <div id='challenges'>
-                    <form>
-                        <input className='search' type='text' placeholder='Opponent user name' onChange={this.handleOpponentText}/>
-                    
-                        <div type='submit' className='button' onClick={this.sendChallenge} > Send Challenge </div>
-                    </form>
+                    <input className='search' type='text' placeholder='Opponent user name' onChange={this.handleOpponentText}/>
+                
+                    <div type='submit' className='button' onClick={this.sendChallenge} > Send Challenge 
+                    </div>
                     <div>
                         <select id='challengerList' size={10} onChange={this.handleChallengerChange}>
                             <option disabled>Challengers</option>

@@ -7966,13 +7966,11 @@ var challenges = function (_Component) {
     }, {
         key: 'sendChallenge',
         value: function sendChallenge(event) {
-            event.preventDefault();
             this.props.socket.emit('challenge', this.state.opponentText);
         }
     }, {
         key: 'rescindChallenge',
         value: function rescindChallenge(event) {
-            event.preventDefault();
             this.props.socket.emit('rescindChallenge', this.state.actualOpponent);
             this.setState({
                 challengeExtended: false,
@@ -8012,15 +8010,11 @@ var challenges = function (_Component) {
                 return _react2.default.createElement(
                     'div',
                     { id: 'challenges' },
+                    _react2.default.createElement('input', { className: 'search', type: 'text', placeholder: 'Opponent user name', onChange: this.handleOpponentText }),
                     _react2.default.createElement(
-                        'form',
-                        null,
-                        _react2.default.createElement('input', { className: 'search', type: 'text', placeholder: 'Opponent user name', onChange: this.handleOpponentText }),
-                        _react2.default.createElement(
-                            'div',
-                            { type: 'submit', className: 'button', onClick: this.sendChallenge },
-                            ' Send Challenge '
-                        )
+                        'div',
+                        { type: 'submit', className: 'button', onClick: this.sendChallenge },
+                        ' Send Challenge'
                     ),
                     _react2.default.createElement(
                         'div',
