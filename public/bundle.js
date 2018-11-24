@@ -7945,10 +7945,10 @@ var challenges = function (_Component) {
         value: function componentDidMount() {
             var _this2 = this;
 
-            this.props.socket.on('challengeSent', function (actualOpponent) {
+            this.props.socket.on('challengeSent', function (challenge) {
                 _this2.setState({
                     challengeExtended: true,
-                    actualOpponent: actualOpponent,
+                    challenge: challenge,
                     opponentText: '',
                     challenger: ''
                 });
@@ -7957,7 +7957,7 @@ var challenges = function (_Component) {
     }, {
         key: 'componentWillUnmount',
         value: function componentWillUnmount() {
-            this.props.socket.emit('rescindChallenge', this.state.actualOpponent);
+            this.props.socket.emit('rescindChallenge', this.state.challenge);
         }
     }, {
         key: 'handleOpponentText',
@@ -7966,16 +7966,16 @@ var challenges = function (_Component) {
         }
     }, {
         key: 'sendChallenge',
-        value: function sendChallenge(event) {
-            this.props.socket.emit('challenge', this.state.opponentText);
+        value: function sendChallenge() {
+            this.props.socket.emit('challenge', this.state.opponentText.trim());
         }
     }, {
         key: 'rescindChallenge',
-        value: function rescindChallenge(event) {
+        value: function rescindChallenge() {
             this.props.socket.emit('rescindChallenge', this.state.actualOpponent);
             this.setState({
                 challengeExtended: false,
-                actualOponent: ''
+                challenge: ''
             });
         }
     }, {

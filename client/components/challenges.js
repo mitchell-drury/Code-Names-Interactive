@@ -19,10 +19,10 @@ export default class challenges extends Component {
     }
 
     componentDidMount () {
-        this.props.socket.on('challengeSent', actualOpponent => {
+        this.props.socket.on('challengeSent', challenge => {
             this.setState({
                 challengeExtended: true,
-                actualOpponent: actualOpponent,
+                challenge: challenge,
                 opponentText: '',
                 challenger: ''
             })
@@ -30,22 +30,22 @@ export default class challenges extends Component {
     }
 
     componentWillUnmount () {
-        this.props.socket.emit('rescindChallenge', this.state.actualOpponent)
+        this.props.socket.emit('rescindChallenge', this.state.challenge)
     }
 
     handleOpponentText (event) {
         this.setState({opponentText: event.target.value})
     }
 
-    sendChallenge (event) {
-        this.props.socket.emit('challenge', this.state.opponentText);
+    sendChallenge () {
+        this.props.socket.emit('challenge', this.state.opponentText.trim());
     }
 
-    rescindChallenge (event) {
+    rescindChallenge () {
         this.props.socket.emit('rescindChallenge', this.state.actualOpponent)
         this.setState({
             challengeExtended: false,
-            actualOponent: ''
+            challenge: ''
         })
     }
 
