@@ -6862,6 +6862,7 @@ var Main = function (_Component) {
             });
 
             socket.on('challenger', function (newChallenger) {
+                console.log('challenge received');
                 if (!_this2.state.challengers.includes(newChallenger)) {
                     _this2.setState(function (state) {
                         return {

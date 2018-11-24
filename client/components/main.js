@@ -31,7 +31,8 @@ export default class Main extends Component {
             this.setState({loggedIn: response.data.userLoggedIn, authenticating: false})
         })
         
-        socket.on('challenger', newChallenger => {           
+        socket.on('challenger', newChallenger => { 
+            console.log('challenge received')          
             if (!this.state.challengers.includes(newChallenger)){
                 this.setState(state => ({
                     challengers: state.challengers.concat(newChallenger)}))
