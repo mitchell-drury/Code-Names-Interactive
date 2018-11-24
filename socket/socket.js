@@ -39,6 +39,7 @@ module.exports = io => {
         })
 
         socket.on('challenge', challenge => {
+            console.log('challengeSent');
             if (connectedUsers[challenge]){
                 //emit challenge
                 io.to(connectedUsers[challenge]).emit('challenger', io.sockets.connected[socket.id].username)
