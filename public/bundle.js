@@ -7928,7 +7928,7 @@ var challenges = function (_Component) {
         _this.state = {
             challengeExtended: false,
             opponentText: '',
-            actualOponent: '',
+            challenge: '',
             challenger: ''
         };
 
@@ -7967,12 +7967,12 @@ var challenges = function (_Component) {
     }, {
         key: 'sendChallenge',
         value: function sendChallenge() {
-            this.props.socket.emit('challenge', this.state.opponentText.trim());
+            this.props.socket.emit('challenge', this.state.opponentText.trim().toLowerCase());
         }
     }, {
         key: 'rescindChallenge',
         value: function rescindChallenge() {
-            this.props.socket.emit('rescindChallenge', this.state.actualOpponent);
+            this.props.socket.emit('rescindChallenge', this.state.challenge);
             this.setState({
                 challengeExtended: false,
                 challenge: ''

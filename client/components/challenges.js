@@ -7,7 +7,7 @@ export default class challenges extends Component {
         this.state = {
             challengeExtended: false,
             opponentText: '',
-            actualOponent: '',
+            challenge: '',
             challenger:''
         }
 
@@ -38,11 +38,11 @@ export default class challenges extends Component {
     }
 
     sendChallenge () {
-        this.props.socket.emit('challenge', this.state.opponentText.trim());
+        this.props.socket.emit('challenge', this.state.opponentText.trim().toLowerCase());
     }
 
     rescindChallenge () {
-        this.props.socket.emit('rescindChallenge', this.state.actualOpponent)
+        this.props.socket.emit('rescindChallenge', this.state.challenge)
         this.setState({
             challengeExtended: false,
             challenge: ''

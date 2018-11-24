@@ -68,9 +68,10 @@ module.exports = io => {
             }
         })
 
-        socket.on('rescindChallenge', opponent => {
-            if (connectedUsers[opponent]){
-                io.to(connectedUsers[opponent]).emit('challengeRescinded', io.sockets.connected[socket.id].username)
+        socket.on('rescindChallenge', challenge => {
+            console.log('the one t oresceind from: ', challenge)
+            if (connectedUsers[challenge]){
+                io.to(connectedUsers[challenge]).emit('challengeRescinded', io.sockets.connected[socket.id].username)
             }
         })
 
