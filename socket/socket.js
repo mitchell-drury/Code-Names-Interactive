@@ -17,7 +17,7 @@ module.exports = io => {
             removeFromWaitlist(socket.id);
 
             //if they were mid match, forfeit the game and null opponents
-            socket.to(socket.opponent).emit('won', socket.id)
+            socket.to(socket.opponent).emit('youWon', socket.id)
             if (io.sockets.connected[socket.opponent]){
                 io.sockets.connected[socket.opponent].opponent = null;
             }
@@ -98,17 +98,13 @@ module.exports = io => {
             socket.to(socket.opponent).emit('moleSent')
         })
 
-        socket.on('won', () => {
+        socket.on('youWon', () => {
             console.log('Game over');
-            socket.to(socket.opponent).emit('won');
+            socket.to(socket.opponent).emit('youWon');
             if (io.sockets.connected[socket.opponent]) {
                 io.sockets.connected[socket.opponent].opponent = null;
             }
             socket.opponent = null;        
-        })
-
-        socket.on('starting', () => {
-            console.log('starting game');
         })
     })
 

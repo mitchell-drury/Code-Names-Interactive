@@ -4138,9 +4138,9 @@ var Gameboard = function (_Component) {
     _createClass(Gameboard, [{
         key: 'componentWillUnmount',
         value: function componentWillUnmount() {
-            //notify opponent of victory
+            //notify opponent of victory (if they navigate away from page)
             if (this.props.socket) {
-                this.props.socket.emit('won');
+                this.props.socket.emit('youWon');
             }
         }
     }, {
@@ -4152,23 +4152,34 @@ var Gameboard = function (_Component) {
             for (var x = 0; x < 5; x++) {
                 numbers.push(x);
             }
-            return _react2.default.createElement(
-                'div',
-                { id: 'gameboard' },
-                numbers.map(function (row) {
-                    return _react2.default.createElement(
-                        'div',
-                        { key: row, className: 'row' },
-                        numbers.map(function (cell) {
-                            if (_this2.props.openSpaces.indexOf(row * 5 + cell) < 0) {
-                                return _react2.default.createElement('div', { key: row * 5 + cell, cellid: row * 5 + cell, className: 'cell mole', onClick: _this2.props.whackMole });
-                            } else {
-                                return _react2.default.createElement('div', { key: row * 5 + cell, cellid: row * 5 + cell, className: 'cell' });
-                            }
-                        })
-                    );
-                })
-            );
+
+            if (this.props.whackable) {
+                return _react2.default.createElement(
+                    'div',
+                    { id: 'gameboard' },
+                    numbers.map(function (row) {
+                        return _react2.default.createElement(
+                            'div',
+                            { key: row, className: 'row' },
+                            numbers.map(function (cell) {
+                                if (row * 5 + cell === _this2.props.wormSpace) {
+                                    return _react2.default.createElement('div', { key: row * 5 + cell, cellid: row * 5 + cell, className: 'cell worm', onClick: _this2.props.whackWorm });
+                                } else if (_this2.props.openSpaces.indexOf(row * 5 + cell) < 0) {
+                                    return _react2.default.createElement('div', { key: row * 5 + cell, cellid: row * 5 + cell, className: 'cell mole', onClick: _this2.props.whackMole });
+                                } else {
+                                    return _react2.default.createElement('div', { key: row * 5 + cell, cellid: row * 5 + cell, className: 'cell' });
+                                }
+                            })
+                        );
+                    })
+                );
+            } else {
+                return _react2.default.createElement(
+                    'div',
+                    { className: 'wormWarning' },
+                    ' Don\'t hurt the worms!'
+                );
+            }
         }
     }]);
 
@@ -7989,7 +8000,7 @@ var challenges = function (_Component) {
         key: 'acceptChallenge',
         value: function acceptChallenge() {
             //check to make sure at least a challenger has been selected
-            if (this.state.challenger != '') {
+            if (this.state.selectedChallenger != '') {
                 this.props.socket.emit('challengeAccepted', this.state.selectedChallenger);
             }
         }
@@ -8022,7 +8033,7 @@ var challenges = function (_Component) {
                         null,
                         _react2.default.createElement(
                             'select',
-                            { id: 'challengerList', size: 10, onChange: this.handleChallengerChange },
+                            { id: 'challengerList', size: 7, onChange: this.handleChallengerChange },
                             _react2.default.createElement(
                                 'option',
                                 { disabled: true },
@@ -8651,13 +8662,18 @@ var TwoPlayer = function (_Component) {
         _this.state = {
             gameState: 'inactive',
             message: 'Welcome to the yard.',
-            openSpaces: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+            openSpaces: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+            moleCounter: 0,
+            wormSpace: null,
+            whackable: true
         };
 
         _this.joinWaitingRoom = _this.joinWaitingRoom.bind(_this);
         _this.whackMole = _this.whackMole.bind(_this);
         _this.insertMole = _this.insertMole.bind(_this);
         _this.initializeMoles = _this.initializeMoles.bind(_this);
+        _this.whackWorm = _this.whackWorm.bind(_this);
+        _this.moveWorm = _this.moveWorm.bind(_this);
         _this.setGameState = _this.setGameState.bind(_this);
         return _this;
     }
@@ -8677,25 +8693,22 @@ var TwoPlayer = function (_Component) {
                 console.log(msg);
             });
             this.props.socket.on('moleSent', function () {
-                console.log('received mole');
                 _this2.insertMole();
+                if (_this2.state.moleCounter === 4) {
+                    _this2.moveWorm();
+                    _this2.setState({ moleCounter: 0 });
+                } else {
+                    _this2.setState({ moleCounter: _this2.state.moleCounter + 1 });
+                }
             });
             this.props.socket.on('matched', function () {
                 _this2.setGameState('active');
             });
-            this.props.socket.on('won', function () {
+            this.props.socket.on('youWon', function () {
                 console.log('I won');
                 _this2.setGameState('inactive', 'You won the match');
             });
         }
-
-        // setLoggedIn () {
-        //     Axios.post('/account/authenticate')
-        //     .then(isLoggedIn => {
-        //         this.setState({isLoggedIn: isLoggedIn.data})
-        //     })
-        // }
-
     }, {
         key: 'joinWaitingRoom',
         value: function joinWaitingRoom() {
@@ -8715,13 +8728,17 @@ var TwoPlayer = function (_Component) {
     }, {
         key: 'whackMole',
         value: function whackMole(event) {
-            //remove from my grid
-            var newOpenSpaces = this.state.openSpaces;
-            newOpenSpaces.push(parseInt(event.target.getAttribute('cellid')));
-            this.setState({ openSpaces: newOpenSpaces });
-            console.log('mole whacked');
-            //emit to opponent
-            this.props.socket.emit('sendMole', this.props.socket.opponent);
+            if (this.state.whackable) {
+                //remove from my grid
+                var newOpenSpaces = this.state.openSpaces;
+                newOpenSpaces.push(parseInt(event.target.getAttribute('cellid')));
+                this.setState({ openSpaces: newOpenSpaces });
+
+                //emit the whacked mole to the opponent
+                this.props.socket.emit('sendMole', this.props.socket.opponent);
+            } else {
+                console.log('penalty time for worm whacking!');
+            }
         }
     }, {
         key: 'insertMole',
@@ -8732,7 +8749,7 @@ var TwoPlayer = function (_Component) {
             newOpenSpaces.splice(newMoleIndex, 1);
             this.setState({ openSpaces: newOpenSpaces });
             if (this.state.openSpaces.length < 11) {
-                this.props.socket.emit('won', this.props.socket.opponent);
+                this.props.socket.emit('youWon', this.props.socket.opponent);
                 this.setState({ gameState: 'inactive', message: 'You lost' });
             }
         }
@@ -8745,7 +8762,38 @@ var TwoPlayer = function (_Component) {
                 newMoleIndex = Math.floor(Math.random() * newOpenSpaces.length);
                 newOpenSpaces.splice(newMoleIndex, 1);
             }
-            this.setState({ openSpaces: newOpenSpaces });
+            var wormIndex = Math.floor(Math.random() * newOpenSpaces.length);
+            var wormSpace = newOpenSpaces[wormIndex];
+            newOpenSpaces.splice(wormIndex, 1);
+            this.setState({ openSpaces: newOpenSpaces, wormSpace: wormSpace });
+        }
+    }, {
+        key: 'whackWorm',
+        value: function whackWorm() {
+            var _this4 = this;
+
+            //freeze ability to whack moles for .5 seconds
+            this.setState({ whackable: false });
+            setTimeout(function () {
+                _this4.setState({ whackable: true });
+            }, 750);
+            this.moveWorm();
+        }
+    }, {
+        key: 'moveWorm',
+        value: function moveWorm() {
+            console.log('moving worm');
+            //select new space from open spaces
+            var newWormIndex = Math.floor(Math.random() * this.state.openSpaces.length);
+
+            var newOpenSpaces = this.state.openSpaces;
+            var newWormSpace = newOpenSpaces[newWormIndex];
+
+            //add old worm space to open spaces, and take out the new one
+            newOpenSpaces.push(this.state.wormSpace);
+            newOpenSpaces.splice(newWormIndex, 1);
+
+            this.setState({ openSpaces: newOpenSpaces, wormSpace: newWormSpace });
         }
     }, {
         key: 'render',
@@ -8753,7 +8801,7 @@ var TwoPlayer = function (_Component) {
             if (this.state.gameState === 'active') {
                 return _react2.default.createElement(
                     _gameboard2.default,
-                    { socket: this.props.socket, openSpaces: this.state.openSpaces, whackMole: this.whackMole },
+                    { socket: this.props.socket, openSpaces: this.state.openSpaces, wormSpace: this.state.wormSpace, whackMole: this.whackMole, whackWorm: this.whackWorm, whackable: this.state.whackable },
                     ' '
                 );
             } else if (this.state.gameState === 'inactive') {

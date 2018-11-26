@@ -57,7 +57,7 @@ export default class challenges extends Component {
 
     acceptChallenge () {
         //check to make sure at least a challenger has been selected
-        if (this.state.challenger != ''){
+        if (this.state.selectedChallenger != ''){
             this.props.socket.emit('challengeAccepted', this.state.selectedChallenger)
         }
     }
@@ -78,7 +78,7 @@ export default class challenges extends Component {
                     <button id="sendChallenge" type='submit' className='button' onClick={this.sendChallenge} > Send Challenge 
                     </button>
                     <div>
-                        <select id='challengerList' size={10} onChange={this.handleChallengerChange}>
+                        <select id='challengerList' size={7} onChange={this.handleChallengerChange}>
                             <option disabled>Challengers</option>
                             {this.props.challengers.map((challenger, i) => {
                                 return (<option key={i}> {challenger} </option>);

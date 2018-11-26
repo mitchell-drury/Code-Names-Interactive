@@ -49,6 +49,10 @@ input:focus {
     display:inline-block;
 }
 
+.hide{
+    display:none;
+}
+
 /******************** HOME **********************/
 #home, #twoPlayer, #waiting, #singlePlayer {
     margin:auto;
@@ -135,6 +139,15 @@ input:focus {
 #board:hover{
     cursor:url('images/Webp.net-resizeimage.png') 10 5, auto;
 }
+.wormWarning{
+    position:fixed;
+    height:100%;
+    width:100%;
+    color:red;
+    text-align: center;
+    font-size:1.5em;
+}
+
 .row{
     height:calc(20%);
 }
@@ -149,6 +162,12 @@ input:focus {
 
 .mole{
     background: url(images/Optimized-mole.png);
+    background-size:cover;
+    background-position:center;
+}
+
+.worm{
+    background: url(images/worm.png);
     background-size:cover;
     background-position:center;
 }
