@@ -26,6 +26,8 @@ apiRouter.post('/endgame', function(req, res, next) {
             }
             res.json(user);
         })
+    } else {
+        res.send(false)
     }
 })
 

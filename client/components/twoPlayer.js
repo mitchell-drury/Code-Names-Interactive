@@ -107,11 +107,11 @@ export default class TwoPlayer extends Component {
     }
 
     whackWorm () {
-        //freeze ability to whack moles for .5 seconds
+        //freeze ability to whack moles for an period of time
         this.setState({whackable: false})
         setTimeout(() => {
                 this.setState({whackable: true})
-            }, 750
+            }, 500
         )
         this.moveWorm();
     }
