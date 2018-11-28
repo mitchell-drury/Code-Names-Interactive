@@ -8526,11 +8526,10 @@ var SinglePlayer = function (_Component) {
 
             //do end game stuff 1: message, 2: update player database record, 3: clear timer
             clearInterval(this.timer);
-            this.setState({ gameState: 'ended' });
+            this.setState({ gameState: 'ended', speed: 1000, speedChange: false });
             _Axios2.default.post('/api/endgame', {
                 score: this.state.molesWhacked
             }).then(function (user) {
-                console.log('user', user);
                 if (user.data) {
                     _this2.setState({
                         stats: _react2.default.createElement(

@@ -47,12 +47,11 @@ export default class SinglePlayer extends Component {
     endGame () {
         //do end game stuff 1: message, 2: update player database record, 3: clear timer
         clearInterval(this.timer);
-        this.setState({gameState: 'ended'});
+        this.setState({gameState: 'ended', speed: 1000, speedChange:false});
         Axios.post('/api/endgame', {
             score: this.state.molesWhacked
         })
         .then(user => {
-            console.log('user', user)
             if (user.data) {
                 this.setState({
                     stats: <div> {'High score: ' + user.data.highScoreSingle}
