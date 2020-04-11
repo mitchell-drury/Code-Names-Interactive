@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Main from './components/main.js';
+import {ClientRoutes} from './components/clientRoutes.js';
 
 ReactDOM.render (
-    <Main />,
+    <ClientRoutes />,
     document.getElementById('app')
 )

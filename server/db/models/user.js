@@ -18,24 +18,6 @@ const User = db.define('user', {
   },
   salt: {
     type: Sequelize.STRING
-  },
-  highScoreSingle:{
-    type:Sequelize.INTEGER,
-    defaultValue: 0
-  },
-  averageSingle:{
-    type:Sequelize.VIRTUAL,
-    set: function (val) {
-      this.setDataValue('averageSingle', this.cumulativeScore/this.gamesPlayed)
-    }
-  },
-  gamesPlayed:{
-    type:Sequelize.INTEGER,
-    defaultValue: 0
-  },
-  cumulativeScore:{
-    type:Sequelize.INTEGER,
-    defaultValue:0
   }
 })
 

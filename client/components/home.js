@@ -1,31 +1,22 @@
 import React, {Component} from 'react';
-import PlayModes from './playModes.js';
-import Login from './login.js';
-import Logout from './logout.js';
+import PlayOneScreen from './playOneScreen.js';
+import CreateRemoteGame from './createRemoteGame.js';
+import JoinRemoteGame from './joinRemoteGame.js';
 
 export default class Home extends Component {
     constructor (props) {
-        super (props)
-    }
-
-    componentDidMount () {
+        super (props);
     }
 
     render () {
-        if (!this.props.loggedIn) {
-            return (
-                <div id="home"> 
-                    <PlayModes> </PlayModes>
-                    <Login setLoggedInStatus={this.props.setLoggedInStatus} socket={this.props.socket}> </Login>
+        return (
+            <div id='main'>
+                <div id='homeScreenOptionsContainer'>
+                    <PlayOneScreen />
+                    <CreateRemoteGame />
+                    <JoinRemoteGame />
                 </div>
-            )
-        } else {
-            return (
-                <div id="home"> 
-                    <PlayModes> </PlayModes>
-                    <Logout setLoggedInStatus={this.props.setLoggedInStatus} socket={this.props.socket}> </Logout>
-                </div>                
-            )
-        }
+            </div>
+        )
     }
-} 
+}

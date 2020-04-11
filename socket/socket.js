@@ -1,117 +1,47 @@
-const User = require('../server/db/models/user.js');
-const Op = require('sequelize').Op;
-
 module.exports = io => {
-    let waitlist = [];
-    let connectedUsers = {};
 
     io.on('connection', socket => {
-        console.log('Hooked up!', socket.id)
-        if (socket.request.session.passport){
-            socket.username = socket.request.session.passport.user.username
-            connectedUsers[socket.request.session.passport.user.username] = socket.id;
-            console.log('connected: ', connectedUsers)
-        }
+        console.log('Hooked up! ', socket.id);
+
         socket.on('disconnect', function() {
-            //remove from random waitlist
-            removeFromWaitlist(socket.id);
-
-            //if they were mid match, forfeit the game and null opponents
-            socket.to(socket.opponent).emit('youWon', socket.id)
-            if (io.sockets.connected[socket.opponent]){
-                io.sockets.connected[socket.opponent].opponent = null;
-            }
-
-            //rescind challenge if one had been extended
-            if (socket.challenge){
-                console.log('rescending on disconnect: ', socket.challenge, socket.id)
-                socket.to(connectedUsers[socket.challenge]).emit('challengeRescinded', socket.request.session.passport.user.username)
-            }
-            
-            //remove from connectedUser object
-            delete connectedUsers[socket.username];
-
-        })
-        socket.on('login', username => {
-            socket.username = username;
-            connectedUsers[username] = socket.id;
-            console.log('logged in socket: ', socket.id, socket.username)
+            io.emit('user disconnected');
+            // remove admin status from rooms list
         })
 
-        socket.on('challenge', challenge => {
-            console.log('emitted challnge to ', challenge)
-            if (connectedUsers[challenge]){
-                //emit challenge
-                io.to(connectedUsers[challenge]).emit('challenger', io.sockets.connected[socket.id].username)
-                socket.challenge = challenge;
-                
-                //emit back to sender that it was sent
-                io.to(socket.id).emit('challengeSent', challenge)
+        socket.on('showRooms', () => {
+            console.log('rooms: ', io.sockets.adapter.rooms)
+        })
+
+        socket.on('createRoom', (newRoomName) => {
+            if(io.sockets.adapter.rooms[newRoomName]){
+                if(io.sockets.adapter.rooms.roomAdmins[newRoomName] == socket.id) {
+                    io.to(`${socket.id}`).emit('new room created', newRoomName);
+                } else {
+                    io.to(`${socket.id}`).emit('room name already taken', newRoomName);
+                }
             } else {
-                //emit back to sender if opponent not available
-                io.to(socket.id).emit('opponentNotAvailable', 'Opponent not logged in')
+                if (!io.sockets.adapter.rooms.roomAdmins) {
+                    io.sockets.adapter.rooms.roomAdmins = {[newRoomName]: socket.id}
+                } else {
+                    io.sockets.adapter.rooms.roomAdmins[newRoomName] = socket.id;
+                }
+                socket.join(newRoomName);
+                io.to(`${socket.id}`).emit('new room created', newRoomName);
             }
         })
 
-        socket.on('challengeAccepted', opponent => {
-            //first make sure the proposed opponent is connected
-            if (connectedUsers[opponent]){
-                //define opponents
-                let playerOne = connectedUsers[opponent];
-                let playerTwo = socket.id;
-                io.sockets.connected[playerOne].opponent = playerTwo;
-                io.sockets.connected[playerTwo].opponent = playerOne;
-                
-                //match them up
-                io.to(playerOne).emit('matched', playerTwo);
-                io.to(playerTwo).emit('matched', playerOne);
+        socket.on('joinGame', (gameToJoin, name) => {
+            console.log('socket trying to join ', 'rooms extant: ', io.sockets.adapter.rooms);
+            if(io.sockets.adapter.rooms[gameToJoin]) {
+                io.to(`${io.sockets.adapter.rooms.roomAdmins[gameToJoin]}`).emit('trying to join', name, socket.id);
+            } else {
+                io.to(`${socket.id}`).emit('room does not exist', gameToJoin)
             }
         })
 
-        socket.on('rescindChallenge', challenge => {
-            console.log('the one t oresceind from: ', challenge)
-            if (connectedUsers[challenge]){
-                io.to(connectedUsers[challenge]).emit('challengeRescinded', io.sockets.connected[socket.id].username)
-            }
-        })
-
-        socket.on('joinWaiting', () => {
-            if (!waitlist.includes(socket.id)){
-                waitlist.push(socket.id);
-            }   
-            console.log('waitlist:', waitlist);
-            if (waitlist.length >= 2){
-                let playerOne = waitlist.shift();
-                let playerTwo = waitlist.shift();
-                io.sockets.connected[playerOne].opponent = playerTwo;
-                io.sockets.connected[playerTwo].opponent = playerOne;
-                io.to(playerOne).emit('matched', playerTwo);
-                io.to(playerTwo).emit('matched', playerOne);
-            }
-        })
-
-        socket.on('leaveWaiting', () => {
-            removeFromWaitlist(socket.id);
-        })
-
-        socket.on('sendMole', () => {
-            socket.to(socket.opponent).emit('moleSent')
-        })
-
-        socket.on('youWon', () => {
-            console.log('Game over');
-            socket.to(socket.opponent).emit('youWon');
-            if (io.sockets.connected[socket.opponent]) {
-                io.sockets.connected[socket.opponent].opponent = null;
-            }
-            socket.opponent = null;        
+        socket.on('denied', (requestingSocket) => {
+            console.log('denied');
+            io.to(requestingSocket).emit('denied');
         })
     })
-
-    function removeFromWaitlist (socketId) {
-        let socketPosition = waitlist.indexOf(socketId);
-        if (socketPosition >= 0) {
-            waitlist.splice(waitlist.indexOf(socketId), 1);
-        }
-    }
 }

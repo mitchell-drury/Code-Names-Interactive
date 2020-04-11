@@ -16,7 +16,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 var sessionMware = session({
-    secret: 'somereallylong(*DHF$^!@?asdf;,F6^',
+    secret: 'somereallylongrandomstring',
     resave: true,
     saveUninitialized: true,
     cookie: {
@@ -45,7 +45,7 @@ app.get('/*', function(req, res) {
 })
 
 db.sync({force:false});
-const server = app.listen(port, () => console.log('Ready to Whack \'em'));
+const server = app.listen(port, () => console.log('Server Running'));
 
 const io = socketio(server);
 require('../socket/socket.js')(io);

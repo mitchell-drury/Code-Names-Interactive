@@ -2,8 +2,6 @@ const express = require('express');
 const accountRouter = express.Router();
 const User = require('../db/models/user.js')
 const Op = require('sequelize').Op;
-// const passport = require('passport');
-// const LocalStrategy = require('passport-local');
 
 accountRouter.post('/login', function(req, res, next) {
     User.findOne({where: {

@@ -1,5 +1,5 @@
 {
-  "name": "moles",
+  "name": "codeNames",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,6 +9,7 @@
     "build-watch": "webpack -w",
     "start-dev": "npm run build-watch & npm run start-server",
     "start-server": "NODE_ENV='development' nodemon ./server/server.js -e html,js,scss --ignore public",
+    "heroku-postbuild": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
