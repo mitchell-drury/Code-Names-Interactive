@@ -14,7 +14,12 @@ export default class RemoteGame extends Component {
             this.handleRequest(name, requestingSocket);
         })
 
+        socket.on('cancel request', (requestingSocket) => {
+            this.handleCancelRequest(requestingSocket);
+        })
+
         this.handleRequest = this.handleRequest.bind(this);
+        this.handleCancelRequest = this.handleCancelRequest.bind(this);
         this.acceptRequest = this.acceptRequest.bind(this);
         this.denyRequest = this.denyRequest.bind(this);
     }
@@ -35,9 +40,15 @@ export default class RemoteGame extends Component {
         })
     }
 
+    handleCancelRequest(requestingSocket) {
+        let updatedRequests = this.state.requests.filter(request => request.requestingSocket != requestingSocket)
+        this.setState({
+            requests:updatedRequests
+        })    
+    }
+
     acceptRequest(requestingSocket) {
-        socket.emit('accepted', requestingSocket)
-        console.log('accept');
+        socket.emit('accepted', requestingSocket);
     }
 
     denyRequest(requestingSocket) {

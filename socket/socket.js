@@ -5,6 +5,7 @@ module.exports = io => {
 
         socket.on('disconnect', function() {
             io.emit('user disconnected');
+            //cancel all join requests
             // remove admin status from rooms list
         })
 
@@ -37,6 +38,18 @@ module.exports = io => {
             } else {
                 io.to(`${socket.id}`).emit('room does not exist', gameToJoin)
             }
+        })
+
+        socket.on('cancelRequest', (gameToJoin) => {
+            console.log('cancelling request to join');
+            io.to(`${io.sockets.adapter.rooms.roomAdmins[gameToJoin]}`).emit('cancel request', socket.id);
+        })
+
+        socket.on('accepted', requestingSocket => {
+            let roomToJoin = Object.keys(io.sockets.adapter.rooms.roomAdmins).find(room => io.sockets.adapter.rooms.roomAdmins[room] === socket.id);
+            io.sockets.sockets[requestingSocket].join(roomToJoin);
+            io.to(requestingSocket).emit('accepted');
+            console.log('socket rooms: ', io.sockets.adapter.rooms);    
         })
 
         socket.on('denied', (requestingSocket) => {

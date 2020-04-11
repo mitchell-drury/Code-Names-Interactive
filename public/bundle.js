@@ -8514,6 +8514,8 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _reactRouter = __webpack_require__(145);
+
 var _clientRoutes = __webpack_require__(13);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -8543,6 +8545,7 @@ var joinRemoteGame = function (_Component) {
         _this.handleGameChange = _this.handleGameChange.bind(_this);
         _this.handleNameChange = _this.handleNameChange.bind(_this);
         _this.handleSubmit = _this.handleSubmit.bind(_this);
+        _this.cancelRequest = _this.cancelRequest.bind(_this);
 
         _clientRoutes.socket.on('accepted', function () {
             //join socket to room
@@ -8551,6 +8554,10 @@ var joinRemoteGame = function (_Component) {
         _clientRoutes.socket.on('denied', function () {
             console.log('denied entry to this room');
             _this.setState({ waitingForResponse: false });
+        });
+
+        _clientRoutes.socket.on('room does not exist', function () {
+            _this.setState({ joinGameMessage: 'room does not exist', waitingForResponse: false });
         });
         return _this;
     }
@@ -8565,12 +8572,17 @@ var joinRemoteGame = function (_Component) {
         key: 'handleGameChange',
         value: function handleGameChange(event) {
             this.setState({ gameToJoin: event.target.value });
-            console.log(this.state.gameToJoin);
         }
     }, {
         key: 'handleNameChange',
         value: function handleNameChange(event) {
             this.setState({ name: event.target.value });
+        }
+    }, {
+        key: 'cancelRequest',
+        value: function cancelRequest() {
+            _clientRoutes.socket.emit('cancelRequest', this.state.gameToJoin);
+            this.setState({ gameToJoin: '', waitingForResponse: false });
         }
     }, {
         key: 'handleSubmit',
@@ -8583,20 +8595,25 @@ var joinRemoteGame = function (_Component) {
             document.getElementById('joinGameMessage').innerHTML = '';
             document.getElementById('gameToJoin').value = '';
             _clientRoutes.socket.emit('joinGame', this.state.gameToJoin, this.state.name);
-            this.setState({ gameToJoin: '', waitingForResponse: true });
+            this.setState({ waitingForResponse: true });
         }
     }, {
         key: 'render',
         value: function render() {
             if (this.state.remoteGame) {
-                return _react2.default.createElement(Redirect, { push: true, to: '/remoteGame' });
+                return _react2.default.createElement(_reactRouter.Redirect, { push: true, to: '/remoteGame' });
             }
 
             if (this.state.waitingForResponse) {
                 return _react2.default.createElement(
                     'div',
                     null,
-                    'Waiting For Response'
+                    'Waiting For Response',
+                    _react2.default.createElement(
+                        'div',
+                        { id: 'cancelRequest', onClick: this.cancelRequest },
+                        'Cancel Request'
+                    )
                 );
             }
 
@@ -8722,7 +8739,12 @@ var RemoteGame = function (_Component) {
             _this.handleRequest(name, requestingSocket);
         });
 
+        _clientRoutes.socket.on('cancel request', function (requestingSocket) {
+            _this.handleCancelRequest(requestingSocket);
+        });
+
         _this.handleRequest = _this.handleRequest.bind(_this);
+        _this.handleCancelRequest = _this.handleCancelRequest.bind(_this);
         _this.acceptRequest = _this.acceptRequest.bind(_this);
         _this.denyRequest = _this.denyRequest.bind(_this);
         return _this;
@@ -8745,10 +8767,19 @@ var RemoteGame = function (_Component) {
             });
         }
     }, {
+        key: 'handleCancelRequest',
+        value: function handleCancelRequest(requestingSocket) {
+            var updatedRequests = this.state.requests.filter(function (request) {
+                return request.requestingSocket != requestingSocket;
+            });
+            this.setState({
+                requests: updatedRequests
+            });
+        }
+    }, {
         key: 'acceptRequest',
         value: function acceptRequest(requestingSocket) {
             _clientRoutes.socket.emit('accepted', requestingSocket);
-            console.log('accept');
         }
     }, {
         key: 'denyRequest',

@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {Redirect} from 'react-router';
 import {socket} from './clientRoutes.js';
 
 export default class joinRemoteGame extends Component {
@@ -15,6 +16,7 @@ export default class joinRemoteGame extends Component {
         this.handleGameChange = this.handleGameChange.bind(this);
         this.handleNameChange = this.handleNameChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.cancelRequest = this.cancelRequest.bind(this);
 
         socket.on('accepted', () => {
             //join socket to room
@@ -23,6 +25,10 @@ export default class joinRemoteGame extends Component {
         socket.on('denied', () => {
             console.log('denied entry to this room');
             this.setState({waitingForResponse:false});
+        })
+
+        socket.on('room does not exist', () => {
+            this.setState({joinGameMessage: 'room does not exist', waitingForResponse: false});
         })
     }
 
@@ -33,11 +39,15 @@ export default class joinRemoteGame extends Component {
 
     handleGameChange(event) {
         this.setState({gameToJoin: event.target.value});
-        console.log(this.state.gameToJoin);
     }
 
     handleNameChange(event) {
         this.setState({name: event.target.value});
+    }
+
+    cancelRequest() {
+        socket.emit('cancelRequest', this.state.gameToJoin);
+        this.setState({gameToJoin: '', waitingForResponse: false});
     }
 
     handleSubmit(event) {
@@ -49,7 +59,7 @@ export default class joinRemoteGame extends Component {
         document.getElementById('joinGameMessage').innerHTML = '';
         document.getElementById('gameToJoin').value = '';
         socket.emit('joinGame', this.state.gameToJoin, this.state.name);
-        this.setState({gameToJoin: '', waitingForResponse:true});  
+        this.setState({waitingForResponse:true});  
     }
 
     render () {
@@ -61,6 +71,7 @@ export default class joinRemoteGame extends Component {
             return (
                 <div>
                     Waiting For Response
+                    <div id='cancelRequest' onClick={this.cancelRequest}>Cancel Request</div>
                 </div>
             )
         }
