@@ -8396,13 +8396,12 @@ var createRemoteGame = function (_Component) {
             document.getElementById('newRoomName').value = '';
             _clientRoutes.socket.emit('showRooms');
             _clientRoutes.socket.emit('createRoom', this.state.newGameRoom, _clientRoutes.socket.id);
-            this.setState({ newGameRoom: '' });
         }
     }, {
         key: 'render',
         value: function render() {
             if (this.state.remoteGame) {
-                return _react2.default.createElement(_reactRouter.Redirect, { push: true, to: '/remoteGame' });
+                return _react2.default.createElement(_reactRouter.Redirect, { push: true, to: '/remoteGame?gameRoom=' + this.state.newGameRoom });
             }
 
             return _react2.default.createElement(
@@ -8535,29 +8534,28 @@ var joinRemoteGame = function (_Component) {
         var _this = _possibleConstructorReturn(this, (joinRemoteGame.__proto__ || Object.getPrototypeOf(joinRemoteGame)).call(this, props));
 
         _this.state = {
-            gameToJoin: '',
+            roomToJoin: '',
             name: '',
-            remoteGame: false,
+            inRoom: false,
             joinGameMessage: '',
             waitingForResponse: false
         };
 
-        _this.handleGameChange = _this.handleGameChange.bind(_this);
+        _this.handleRoomChange = _this.handleRoomChange.bind(_this);
         _this.handleNameChange = _this.handleNameChange.bind(_this);
         _this.handleSubmit = _this.handleSubmit.bind(_this);
         _this.cancelRequest = _this.cancelRequest.bind(_this);
 
         _clientRoutes.socket.on('accepted', function () {
-            //join socket to room
-            _this.setState({ remoteGame: true });
+            _this.setState({ inRoom: true });
         });
+
         _clientRoutes.socket.on('denied', function () {
-            console.log('denied entry to this room');
             _this.setState({ waitingForResponse: false });
         });
 
         _clientRoutes.socket.on('room does not exist', function () {
-            _this.setState({ joinGameMessage: 'room does not exist', waitingForResponse: false });
+            _this.setState({ joinRoomMessage: 'room does not exist', waitingForResponse: false });
         });
         return _this;
     }
@@ -8567,11 +8565,12 @@ var joinRemoteGame = function (_Component) {
         value: function componentWillUnmount() {
             _clientRoutes.socket.off('accepted');
             _clientRoutes.socket.off('denied');
+            _clientRoutes.socket.off('room does not exist');
         }
     }, {
-        key: 'handleGameChange',
-        value: function handleGameChange(event) {
-            this.setState({ gameToJoin: event.target.value });
+        key: 'handleRoomChange',
+        value: function handleRoomChange(event) {
+            this.setState({ roomToJoin: event.target.value });
         }
     }, {
         key: 'handleNameChange',
@@ -8581,27 +8580,27 @@ var joinRemoteGame = function (_Component) {
     }, {
         key: 'cancelRequest',
         value: function cancelRequest() {
-            _clientRoutes.socket.emit('cancelRequest', this.state.gameToJoin);
-            this.setState({ gameToJoin: '', waitingForResponse: false });
+            _clientRoutes.socket.emit('cancelRequest', this.state.roomToJoin);
+            this.setState({ roomToJoin: '', waitingForResponse: false });
         }
     }, {
         key: 'handleSubmit',
         value: function handleSubmit(event) {
             event.preventDefault();
             //can do some more stringent checking here
-            if (this.state.gameToJoin === '' || this.state.name === '') {
+            if (this.state.roomToJoin === '' || this.state.name === '') {
                 return;
             }
-            document.getElementById('joinGameMessage').innerHTML = '';
-            document.getElementById('gameToJoin').value = '';
-            _clientRoutes.socket.emit('joinGame', this.state.gameToJoin, this.state.name);
+            document.getElementById('joinRoomMessage').innerHTML = '';
+            document.getElementById('roomToJoin').value = '';
+            _clientRoutes.socket.emit('joinRoom', this.state.roomToJoin, this.state.name);
             this.setState({ waitingForResponse: true });
         }
     }, {
         key: 'render',
         value: function render() {
-            if (this.state.remoteGame) {
-                return _react2.default.createElement(_reactRouter.Redirect, { push: true, to: '/remoteGame' });
+            if (this.state.inRoom) {
+                return _react2.default.createElement(_reactRouter.Redirect, { push: true, to: '/remoteGame?gameRoom=' + this.state.roomToJoin });
             }
 
             if (this.state.waitingForResponse) {
@@ -8619,18 +8618,18 @@ var joinRemoteGame = function (_Component) {
 
             return _react2.default.createElement(
                 'div',
-                { id: 'joinRemoteGame', className: 'homeScreenOption' },
-                'Join Remote Game',
+                { id: 'joinRoom', className: 'homeScreenOption' },
+                'Join a Game',
                 _react2.default.createElement(
                     'form',
                     { onSubmit: this.handleSubmit },
-                    _react2.default.createElement('input', { id: 'gameToJoin', className: 'homeInput', type: 'text', onChange: this.handleGameChange }),
+                    _react2.default.createElement('input', { id: 'roomToJoin', className: 'homeInput', type: 'text', onChange: this.handleRoomChange }),
                     _react2.default.createElement('input', { id: 'name', className: 'homeInput', type: 'text', onChange: this.handleNameChange }),
                     _react2.default.createElement('input', { type: 'submit' }),
                     _react2.default.createElement(
                         'div',
-                        { id: 'joinGameMessage' },
-                        this.state.joinGameMessage
+                        { id: 'joinRoomMessage' },
+                        this.state.joinRoomMessage
                     )
                 )
             );
@@ -8715,6 +8714,12 @@ var _requestToJoin = __webpack_require__(161);
 
 var _requestToJoin2 = _interopRequireDefault(_requestToJoin);
 
+var _queryString = __webpack_require__(163);
+
+var QueryString = _interopRequireWildcard(_queryString);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -8732,43 +8737,73 @@ var RemoteGame = function (_Component) {
         var _this = _possibleConstructorReturn(this, (RemoteGame.__proto__ || Object.getPrototypeOf(RemoteGame)).call(this, props));
 
         _this.state = {
-            requests: []
+            requests: [],
+            chat: [{ sender: 'mitch', message: 'hey there guys' }],
+            params: QueryString.parse(location.search),
+            acceptedToRoom: false,
+            gameData: {}
         };
 
-        _clientRoutes.socket.on('trying to join', function (name, requestingSocket) {
-            _this.handleRequest(name, requestingSocket);
+        _clientRoutes.socket.on('trying to join', function (name, requestingSocket, room) {
+            _this.handleRequest(name, requestingSocket, room);
         });
 
         _clientRoutes.socket.on('cancel request', function (requestingSocket) {
-            _this.handleCancelRequest(requestingSocket);
+            _this.removeRequest(requestingSocket);
+        });
+
+        _clientRoutes.socket.on('game data', function (gameData) {
+            console.log(gameData);
+        });
+
+        _clientRoutes.socket.on('new member', function (requestingSocket) {
+            _this.removeRequest(requestingSocket);
+        });
+
+        _clientRoutes.socket.on('member denied', function (requestingSocket) {
+            _this.removeRequest(requestingSocket);
+        });
+
+        _clientRoutes.socket.on('new message', function (sender, message) {
+            var newChat = [{ sender: sender, message: message }].concat(_this.state.chat);
+            _this.setState({ chat: newChat });
         });
 
         _this.handleRequest = _this.handleRequest.bind(_this);
-        _this.handleCancelRequest = _this.handleCancelRequest.bind(_this);
+        _this.removeRequest = _this.removeRequest.bind(_this);
         _this.acceptRequest = _this.acceptRequest.bind(_this);
         _this.denyRequest = _this.denyRequest.bind(_this);
+        _this.submitChat = _this.submitChat.bind(_this);
         return _this;
     }
 
     _createClass(RemoteGame, [{
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+            _clientRoutes.socket.emit('get game data', this.state.params.gameRoom);
+        }
+    }, {
         key: 'componentWillUnmount',
         value: function componentWillUnmount() {
-            //also remove socket from game room
+            //also remove socket from game room? or at least emit that left
             _clientRoutes.socket.off('trying to join');
+            _clientRoutes.socket.off('cancel request');
+            _clientRoutes.socket.off('game data');
+            _clientRoutes.socket.off('new member');
+            _clientRoutes.socket.off('member denied');
         }
     }, {
         key: 'handleRequest',
-        value: function handleRequest(name, requestingSocket) {
+        value: function handleRequest(name, requestingSocket, roomToJoin) {
             console.log('user trying to join: ', name, ' ', requestingSocket, ' state: ', this.state);
-            var requests = this.state.requests.concat({ name: name,
-                requestingSocket: requestingSocket });
+            var requests = [{ name: name, requestingSocket: requestingSocket, roomToJoin: roomToJoin }].concat(this.state.requests);
             this.setState({
                 requests: requests
             });
         }
     }, {
-        key: 'handleCancelRequest',
-        value: function handleCancelRequest(requestingSocket) {
+        key: 'removeRequest',
+        value: function removeRequest(requestingSocket) {
             var updatedRequests = this.state.requests.filter(function (request) {
                 return request.requestingSocket != requestingSocket;
             });
@@ -8778,20 +8813,19 @@ var RemoteGame = function (_Component) {
         }
     }, {
         key: 'acceptRequest',
-        value: function acceptRequest(requestingSocket) {
-            _clientRoutes.socket.emit('accepted', requestingSocket);
+        value: function acceptRequest(request) {
+            _clientRoutes.socket.emit('accepted', request.name, request.requestingSocket, request.roomToJoin);
         }
     }, {
         key: 'denyRequest',
-        value: function denyRequest(requestingSocket) {
-            var updatedRequests = this.state.requests.filter(function (request) {
-                return request.requestingSocket != requestingSocket;
-            });
-            this.setState({
-                requests: updatedRequests
-            });
-            _clientRoutes.socket.emit('denied', requestingSocket);
-            console.log('deny');
+        value: function denyRequest(request) {
+            _clientRoutes.socket.emit('denied', request.requestingSocket, request.roomToJoin);
+        }
+    }, {
+        key: 'submitChat',
+        value: function submitChat(event) {
+            event.preventDefault();
+            _clientRoutes.socket.emit('chat message', event.target.value, this.state.params.gameRoom);
         }
     }, {
         key: 'render',
@@ -8803,25 +8837,53 @@ var RemoteGame = function (_Component) {
                 { id: 'remoteGame' },
                 _react2.default.createElement(
                     'div',
-                    { id: 'requests' },
-                    'Requests to Join:',
+                    { id: 'topBar' },
                     _react2.default.createElement(
-                        'ul',
-                        null,
-                        this.state.requests.map(function (request) {
-                            return _react2.default.createElement(_requestToJoin2.default, { key: request.name, acceptRequest: _this2.acceptRequest, denyRequest: _this2.denyRequest, request: request });
-                        })
+                        'div',
+                        { id: 'requests' },
+                        'Requests to Join',
+                        _react2.default.createElement(
+                            'ul',
+                            null,
+                            this.state.requests.map(function (request) {
+                                return _react2.default.createElement(_requestToJoin2.default, { key: request.name, acceptRequest: _this2.acceptRequest, denyRequest: _this2.denyRequest, request: request });
+                            })
+                        )
+                    ),
+                    _react2.default.createElement(
+                        'div',
+                        { id: 'chat' },
+                        'Room Discussion',
+                        _react2.default.createElement(
+                            'ul',
+                            null,
+                            this.state.chat.map(function (message) {
+                                return _react2.default.createElement(
+                                    'div',
+                                    { key: message.sender },
+                                    message.sender,
+                                    ': ',
+                                    message.message
+                                );
+                            })
+                        ),
+                        _react2.default.createElement(
+                            'form',
+                            { id: 'chatForm', onSubmit: this.submitChat },
+                            _react2.default.createElement('input', { type: 'text', id: 'chatInput', className: 'inline' }),
+                            _react2.default.createElement('input', { type: 'submit', id: 'chatSubmit', className: 'inline' })
+                        )
+                    ),
+                    _react2.default.createElement(
+                        'div',
+                        { id: 'players' },
+                        'Players'
                     )
                 ),
                 _react2.default.createElement(
                     'div',
-                    { id: 'chat' },
-                    'Room Discussion:'
-                ),
-                _react2.default.createElement(
-                    'div',
-                    { id: 'remoteGame' },
-                    'remote game'
+                    { id: 'gameBoard' },
+                    'game board'
                 )
             );
         }
@@ -34252,8 +34314,6 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _clientRoutes = __webpack_require__(13);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -34270,9 +34330,7 @@ var RequestToJoin = function (_Component) {
 
         var _this = _possibleConstructorReturn(this, (RequestToJoin.__proto__ || Object.getPrototypeOf(RequestToJoin)).call(this, props));
 
-        _this.state = {
-            //request:{socket: props.socketId}
-        };
+        _this.state = {};
         return _this;
     }
 
@@ -34286,12 +34344,12 @@ var RequestToJoin = function (_Component) {
                 ' ',
                 _react2.default.createElement(
                     'span',
-                    { className: 'acceptRequest', onClick: this.props.acceptRequest.bind(null, this.props.request.requestingSocket) },
+                    { className: 'acceptRequest', onClick: this.props.acceptRequest.bind(null, this.props.request) },
                     ' \u2714 '
                 ),
                 _react2.default.createElement(
                     'span',
-                    { className: 'denyRequest', onClick: this.props.denyRequest.bind(null, this.props.request.requestingSocket) },
+                    { className: 'denyRequest', onClick: this.props.denyRequest.bind(null, this.props.request) },
                     ' X '
                 )
             );
@@ -34302,6 +34360,511 @@ var RequestToJoin = function (_Component) {
 }(_react.Component);
 
 exports.default = RequestToJoin;
+
+/***/ }),
+/* 162 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var token = '%[a-f0-9]{2}';
+var singleMatcher = new RegExp(token, 'gi');
+var multiMatcher = new RegExp('(' + token + ')+', 'gi');
+
+function decodeComponents(components, split) {
+	try {
+		// Try to decode the entire string first
+		return decodeURIComponent(components.join(''));
+	} catch (err) {
+		// Do nothing
+	}
+
+	if (components.length === 1) {
+		return components;
+	}
+
+	split = split || 1;
+
+	// Split the array in 2 parts
+	var left = components.slice(0, split);
+	var right = components.slice(split);
+
+	return Array.prototype.concat.call([], decodeComponents(left), decodeComponents(right));
+}
+
+function decode(input) {
+	try {
+		return decodeURIComponent(input);
+	} catch (err) {
+		var tokens = input.match(singleMatcher);
+
+		for (var i = 1; i < tokens.length; i++) {
+			input = decodeComponents(tokens, i).join('');
+
+			tokens = input.match(singleMatcher);
+		}
+
+		return input;
+	}
+}
+
+function customDecodeURIComponent(input) {
+	// Keep track of all the replacements and prefill the map with the `BOM`
+	var replaceMap = {
+		'%FE%FF': '\uFFFD\uFFFD',
+		'%FF%FE': '\uFFFD\uFFFD'
+	};
+
+	var match = multiMatcher.exec(input);
+	while (match) {
+		try {
+			// Decode as big chunks as possible
+			replaceMap[match[0]] = decodeURIComponent(match[0]);
+		} catch (err) {
+			var result = decode(match[0]);
+
+			if (result !== match[0]) {
+				replaceMap[match[0]] = result;
+			}
+		}
+
+		match = multiMatcher.exec(input);
+	}
+
+	// Add `%C2` at the end of the map to make sure it does not replace the combinator before everything else
+	replaceMap['%C2'] = '\uFFFD';
+
+	var entries = Object.keys(replaceMap);
+
+	for (var i = 0; i < entries.length; i++) {
+		// Replace all decoded components
+		var key = entries[i];
+		input = input.replace(new RegExp(key, 'g'), replaceMap[key]);
+	}
+
+	return input;
+}
+
+module.exports = function (encodedURI) {
+	if (typeof encodedURI !== 'string') {
+		throw new TypeError('Expected `encodedURI` to be of type `string`, got `' + typeof encodedURI + '`');
+	}
+
+	try {
+		encodedURI = encodedURI.replace(/\+/g, ' ');
+
+		// Try the built in decoder first
+		return decodeURIComponent(encodedURI);
+	} catch (err) {
+		// Fallback to a more advanced decoder
+		return customDecodeURIComponent(encodedURI);
+	}
+};
+
+
+/***/ }),
+/* 163 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+const strictUriEncode = __webpack_require__(165);
+const decodeComponent = __webpack_require__(162);
+const splitOnFirst = __webpack_require__(164);
+
+const isNullOrUndefined = value => value === null || value === undefined;
+
+function encoderForArrayFormat(options) {
+	switch (options.arrayFormat) {
+		case 'index':
+			return key => (result, value) => {
+				const index = result.length;
+
+				if (
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === '')
+				) {
+					return result;
+				}
+
+				if (value === null) {
+					return [...result, [encode(key, options), '[', index, ']'].join('')];
+				}
+
+				return [
+					...result,
+					[encode(key, options), '[', encode(index, options), ']=', encode(value, options)].join('')
+				];
+			};
+
+		case 'bracket':
+			return key => (result, value) => {
+				if (
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === '')
+				) {
+					return result;
+				}
+
+				if (value === null) {
+					return [...result, [encode(key, options), '[]'].join('')];
+				}
+
+				return [...result, [encode(key, options), '[]=', encode(value, options)].join('')];
+			};
+
+		case 'comma':
+		case 'separator':
+			return key => (result, value) => {
+				if (value === null || value === undefined || value.length === 0) {
+					return result;
+				}
+
+				if (result.length === 0) {
+					return [[encode(key, options), '=', encode(value, options)].join('')];
+				}
+
+				return [[result, encode(value, options)].join(options.arrayFormatSeparator)];
+			};
+
+		default:
+			return key => (result, value) => {
+				if (
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === '')
+				) {
+					return result;
+				}
+
+				if (value === null) {
+					return [...result, encode(key, options)];
+				}
+
+				return [...result, [encode(key, options), '=', encode(value, options)].join('')];
+			};
+	}
+}
+
+function parserForArrayFormat(options) {
+	let result;
+
+	switch (options.arrayFormat) {
+		case 'index':
+			return (key, value, accumulator) => {
+				result = /\[(\d*)\]$/.exec(key);
+
+				key = key.replace(/\[\d*\]$/, '');
+
+				if (!result) {
+					accumulator[key] = value;
+					return;
+				}
+
+				if (accumulator[key] === undefined) {
+					accumulator[key] = {};
+				}
+
+				accumulator[key][result[1]] = value;
+			};
+
+		case 'bracket':
+			return (key, value, accumulator) => {
+				result = /(\[\])$/.exec(key);
+				key = key.replace(/\[\]$/, '');
+
+				if (!result) {
+					accumulator[key] = value;
+					return;
+				}
+
+				if (accumulator[key] === undefined) {
+					accumulator[key] = [value];
+					return;
+				}
+
+				accumulator[key] = [].concat(accumulator[key], value);
+			};
+
+		case 'comma':
+		case 'separator':
+			return (key, value, accumulator) => {
+				const isArray = typeof value === 'string' && value.split('').indexOf(options.arrayFormatSeparator) > -1;
+				const newValue = isArray ? value.split(options.arrayFormatSeparator).map(item => decode(item, options)) : value === null ? value : decode(value, options);
+				accumulator[key] = newValue;
+			};
+
+		default:
+			return (key, value, accumulator) => {
+				if (accumulator[key] === undefined) {
+					accumulator[key] = value;
+					return;
+				}
+
+				accumulator[key] = [].concat(accumulator[key], value);
+			};
+	}
+}
+
+function validateArrayFormatSeparator(value) {
+	if (typeof value !== 'string' || value.length !== 1) {
+		throw new TypeError('arrayFormatSeparator must be single character string');
+	}
+}
+
+function encode(value, options) {
+	if (options.encode) {
+		return options.strict ? strictUriEncode(value) : encodeURIComponent(value);
+	}
+
+	return value;
+}
+
+function decode(value, options) {
+	if (options.decode) {
+		return decodeComponent(value);
+	}
+
+	return value;
+}
+
+function keysSorter(input) {
+	if (Array.isArray(input)) {
+		return input.sort();
+	}
+
+	if (typeof input === 'object') {
+		return keysSorter(Object.keys(input))
+			.sort((a, b) => Number(a) - Number(b))
+			.map(key => input[key]);
+	}
+
+	return input;
+}
+
+function removeHash(input) {
+	const hashStart = input.indexOf('#');
+	if (hashStart !== -1) {
+		input = input.slice(0, hashStart);
+	}
+
+	return input;
+}
+
+function getHash(url) {
+	let hash = '';
+	const hashStart = url.indexOf('#');
+	if (hashStart !== -1) {
+		hash = url.slice(hashStart);
+	}
+
+	return hash;
+}
+
+function extract(input) {
+	input = removeHash(input);
+	const queryStart = input.indexOf('?');
+	if (queryStart === -1) {
+		return '';
+	}
+
+	return input.slice(queryStart + 1);
+}
+
+function parseValue(value, options) {
+	if (options.parseNumbers && !Number.isNaN(Number(value)) && (typeof value === 'string' && value.trim() !== '')) {
+		value = Number(value);
+	} else if (options.parseBooleans && value !== null && (value.toLowerCase() === 'true' || value.toLowerCase() === 'false')) {
+		value = value.toLowerCase() === 'true';
+	}
+
+	return value;
+}
+
+function parse(input, options) {
+	options = Object.assign({
+		decode: true,
+		sort: true,
+		arrayFormat: 'none',
+		arrayFormatSeparator: ',',
+		parseNumbers: false,
+		parseBooleans: false
+	}, options);
+
+	validateArrayFormatSeparator(options.arrayFormatSeparator);
+
+	const formatter = parserForArrayFormat(options);
+
+	// Create an object with no prototype
+	const ret = Object.create(null);
+
+	if (typeof input !== 'string') {
+		return ret;
+	}
+
+	input = input.trim().replace(/^[?#&]/, '');
+
+	if (!input) {
+		return ret;
+	}
+
+	for (const param of input.split('&')) {
+		let [key, value] = splitOnFirst(options.decode ? param.replace(/\+/g, ' ') : param, '=');
+
+		// Missing `=` should be `null`:
+		// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
+		value = value === undefined ? null : options.arrayFormat === 'comma' ? value : decode(value, options);
+		formatter(decode(key, options), value, ret);
+	}
+
+	for (const key of Object.keys(ret)) {
+		const value = ret[key];
+		if (typeof value === 'object' && value !== null) {
+			for (const k of Object.keys(value)) {
+				value[k] = parseValue(value[k], options);
+			}
+		} else {
+			ret[key] = parseValue(value, options);
+		}
+	}
+
+	if (options.sort === false) {
+		return ret;
+	}
+
+	return (options.sort === true ? Object.keys(ret).sort() : Object.keys(ret).sort(options.sort)).reduce((result, key) => {
+		const value = ret[key];
+		if (Boolean(value) && typeof value === 'object' && !Array.isArray(value)) {
+			// Sort object keys, not values
+			result[key] = keysSorter(value);
+		} else {
+			result[key] = value;
+		}
+
+		return result;
+	}, Object.create(null));
+}
+
+exports.extract = extract;
+exports.parse = parse;
+
+exports.stringify = (object, options) => {
+	if (!object) {
+		return '';
+	}
+
+	options = Object.assign({
+		encode: true,
+		strict: true,
+		arrayFormat: 'none',
+		arrayFormatSeparator: ','
+	}, options);
+
+	validateArrayFormatSeparator(options.arrayFormatSeparator);
+
+	const shouldFilter = key => (
+		(options.skipNull && isNullOrUndefined(object[key])) ||
+		(options.skipEmptyString && object[key] === '')
+	);
+
+	const formatter = encoderForArrayFormat(options);
+
+	const objectCopy = {};
+
+	for (const key of Object.keys(object)) {
+		if (!shouldFilter(key)) {
+			objectCopy[key] = object[key];
+		}
+	}
+
+	const keys = Object.keys(objectCopy);
+
+	if (options.sort !== false) {
+		keys.sort(options.sort);
+	}
+
+	return keys.map(key => {
+		const value = object[key];
+
+		if (value === undefined) {
+			return '';
+		}
+
+		if (value === null) {
+			return encode(key, options);
+		}
+
+		if (Array.isArray(value)) {
+			return value
+				.reduce(formatter(key), [])
+				.join('&');
+		}
+
+		return encode(key, options) + '=' + encode(value, options);
+	}).filter(x => x.length > 0).join('&');
+};
+
+exports.parseUrl = (input, options) => {
+	return {
+		url: removeHash(input).split('?')[0] || '',
+		query: parse(extract(input), options)
+	};
+};
+
+exports.stringifyUrl = (input, options) => {
+	const url = removeHash(input.url).split('?')[0] || '';
+	const queryFromUrl = exports.extract(input.url);
+	const parsedQueryFromUrl = exports.parse(queryFromUrl);
+	const hash = getHash(input.url);
+	const query = Object.assign(parsedQueryFromUrl, input.query);
+	let queryString = exports.stringify(query, options);
+	if (queryString) {
+		queryString = `?${queryString}`;
+	}
+
+	return `${url}${queryString}${hash}`;
+};
+
+
+/***/ }),
+/* 164 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = (string, separator) => {
+	if (!(typeof string === 'string' && typeof separator === 'string')) {
+		throw new TypeError('Expected the arguments to be of type `string`');
+	}
+
+	if (separator === '') {
+		return [string];
+	}
+
+	const separatorIndex = string.indexOf(separator);
+
+	if (separatorIndex === -1) {
+		return [string];
+	}
+
+	return [
+		string.slice(0, separatorIndex),
+		string.slice(separatorIndex + separator.length)
+	];
+};
+
+
+/***/ }),
+/* 165 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+module.exports = str => encodeURIComponent(str).replace(/[!'()*]/g, x => `%${x.charCodeAt(0).toString(16).toUpperCase()}`);
+
 
 /***/ })
 /******/ ]);

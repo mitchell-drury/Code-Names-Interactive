@@ -6,39 +6,39 @@ export default class joinRemoteGame extends Component {
     constructor (props) {
         super (props);
         this.state = {
-            gameToJoin: '',
+            roomToJoin: '',
             name: '',
-            remoteGame: false,
+            inRoom: false,
             joinGameMessage: '',
             waitingForResponse: false
         }
 
-        this.handleGameChange = this.handleGameChange.bind(this);
+        this.handleRoomChange = this.handleRoomChange.bind(this);
         this.handleNameChange = this.handleNameChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.cancelRequest = this.cancelRequest.bind(this);
 
         socket.on('accepted', () => {
-            //join socket to room
-            this.setState({remoteGame:true})
+            this.setState({inRoom:true})
         })
+
         socket.on('denied', () => {
-            console.log('denied entry to this room');
             this.setState({waitingForResponse:false});
         })
 
         socket.on('room does not exist', () => {
-            this.setState({joinGameMessage: 'room does not exist', waitingForResponse: false});
+            this.setState({joinRoomMessage: 'room does not exist', waitingForResponse: false});
         })
     }
 
     componentWillUnmount() {
         socket.off('accepted');
         socket.off('denied');
+        socket.off('room does not exist');
     }
 
-    handleGameChange(event) {
-        this.setState({gameToJoin: event.target.value});
+    handleRoomChange(event) {
+        this.setState({roomToJoin: event.target.value});
     }
 
     handleNameChange(event) {
@@ -46,25 +46,25 @@ export default class joinRemoteGame extends Component {
     }
 
     cancelRequest() {
-        socket.emit('cancelRequest', this.state.gameToJoin);
-        this.setState({gameToJoin: '', waitingForResponse: false});
+        socket.emit('cancelRequest', this.state.roomToJoin);
+        this.setState({roomToJoin: '', waitingForResponse: false});
     }
 
     handleSubmit(event) {
         event.preventDefault();
         //can do some more stringent checking here
-        if(this.state.gameToJoin === '' || this.state.name === '') {
+        if(this.state.roomToJoin === '' || this.state.name === '') {
             return
         }
-        document.getElementById('joinGameMessage').innerHTML = '';
-        document.getElementById('gameToJoin').value = '';
-        socket.emit('joinGame', this.state.gameToJoin, this.state.name);
+        document.getElementById('joinRoomMessage').innerHTML = '';
+        document.getElementById('roomToJoin').value = '';
+        socket.emit('joinRoom', this.state.roomToJoin, this.state.name);
         this.setState({waitingForResponse:true});  
     }
 
     render () {
-        if(this.state.remoteGame) {
-            return <Redirect push to='/remoteGame'></Redirect>
+        if(this.state.inRoom) {
+            return <Redirect push to={'/remoteGame?gameRoom=' + this.state.roomToJoin}></Redirect>
         }
 
         if(this.state.waitingForResponse) {
@@ -77,13 +77,13 @@ export default class joinRemoteGame extends Component {
         }
 
         return (
-            <div id='joinRemoteGame' className='homeScreenOption'>
-                Join Remote Game
+            <div id='joinRoom' className='homeScreenOption'>
+                Join a Game
                 <form onSubmit={this.handleSubmit} >
-                    <input id='gameToJoin' className='homeInput' type='text' onChange={this.handleGameChange}></input>
+                    <input id='roomToJoin' className='homeInput' type='text' onChange={this.handleRoomChange}></input>
                     <input id='name' className='homeInput' type='text' onChange={this.handleNameChange}></input>
                     <input type='submit'></input>
-                    <div id='joinGameMessage'>{this.state.joinGameMessage}</div>
+                    <div id='joinRoomMessage'>{this.state.joinRoomMessage}</div>
                 </form>
             </div>
         )

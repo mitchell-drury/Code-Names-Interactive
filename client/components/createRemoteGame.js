@@ -45,13 +45,12 @@ export default class createRemoteGame extends Component {
         document.getElementById('createGameMessage').innerHTML = '';
         document.getElementById('newRoomName').value = '';
         socket.emit('showRooms');
-        socket.emit('createRoom', this.state.newGameRoom, socket.id);
-        this.setState({newGameRoom: ''});  
+        socket.emit('createRoom', this.state.newGameRoom, socket.id); 
     }
 
     render () {
         if(this.state.remoteGame) {
-            return <Redirect push to='/remoteGame'></Redirect>
+            return <Redirect push to={'/remoteGame?gameRoom=' + this.state.newGameRoom}></Redirect>
         }
 
         return (
