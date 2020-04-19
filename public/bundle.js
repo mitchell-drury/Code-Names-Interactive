@@ -8352,17 +8352,18 @@ var createRemoteGame = function (_Component) {
 
         _this.state = {
             newGameRoom: '',
+            userName: '',
             createRoomMessage: '',
             remoteGame: false
         };
 
         _this.handleChange = _this.handleChange.bind(_this);
+        _this.userNameChange = _this.userNameChange.bind(_this);
         _this.handleSubmit = _this.handleSubmit.bind(_this);
 
         _clientRoutes.socket.on('new room created', function (msg) {
             _this.setState({ remoteGame: true });
             console.log("room created: ", msg);
-            //socket.emit('showRooms');
         });
 
         _clientRoutes.socket.on('room name already taken', function (msg) {
@@ -8385,17 +8386,21 @@ var createRemoteGame = function (_Component) {
             this.setState({ newGameRoom: event.target.value });
         }
     }, {
+        key: 'userNameChange',
+        value: function userNameChange(event) {
+            this.setState({ userName: event.target.value });
+        }
+    }, {
         key: 'handleSubmit',
         value: function handleSubmit(event) {
             event.preventDefault();
             //do more stringenet checking here 
-            if (this.state.newGameRoom === '') {
+            if (this.state.newGameRoom === '' || this.state.userName === '') {
                 return;
             }
             document.getElementById('createGameMessage').innerHTML = '';
             document.getElementById('newRoomName').value = '';
-            _clientRoutes.socket.emit('showRooms');
-            _clientRoutes.socket.emit('createRoom', this.state.newGameRoom, _clientRoutes.socket.id);
+            _clientRoutes.socket.emit('create room', this.state.newGameRoom, this.state.userName);
         }
     }, {
         key: 'render',
@@ -8411,7 +8416,8 @@ var createRemoteGame = function (_Component) {
                     'form',
                     { onSubmit: this.handleSubmit },
                     'Create Game',
-                    _react2.default.createElement('input', { id: 'newRoomName', type: 'text', className: 'homeInput', onChange: this.handleChange }),
+                    _react2.default.createElement('input', { id: 'newRoomName', className: 'homeInput', type: 'text', onChange: this.handleChange }),
+                    _react2.default.createElement('input', { id: 'userName', className: 'homeInput', type: 'text', onChange: this.userNameChange }),
                     _react2.default.createElement('input', { type: 'submit' }),
                     _react2.default.createElement(
                         'div',
@@ -8580,7 +8586,7 @@ var joinRemoteGame = function (_Component) {
     }, {
         key: 'cancelRequest',
         value: function cancelRequest() {
-            _clientRoutes.socket.emit('cancelRequest', this.state.roomToJoin);
+            _clientRoutes.socket.emit('cancel request', this.state.roomToJoin);
             this.setState({ roomToJoin: '', waitingForResponse: false });
         }
     }, {
@@ -8593,7 +8599,7 @@ var joinRemoteGame = function (_Component) {
             }
             document.getElementById('joinRoomMessage').innerHTML = '';
             document.getElementById('roomToJoin').value = '';
-            _clientRoutes.socket.emit('joinRoom', this.state.roomToJoin, this.state.name);
+            _clientRoutes.socket.emit('join room', this.state.roomToJoin, this.state.name);
             this.setState({ waitingForResponse: true });
         }
     }, {
@@ -8738,7 +8744,9 @@ var RemoteGame = function (_Component) {
 
         _this.state = {
             requests: [],
-            chat: [{ sender: 'mitch', message: 'hey there guys' }],
+            chat: [],
+            players: [],
+            message: '',
             params: QueryString.parse(location.search),
             acceptedToRoom: false,
             gameData: {}
@@ -8756,8 +8764,11 @@ var RemoteGame = function (_Component) {
             console.log(gameData);
         });
 
-        _clientRoutes.socket.on('new member', function (requestingSocket) {
+        _clientRoutes.socket.on('new member', function (requestingSocket, name, color) {
+            console.log('new member');
             _this.removeRequest(requestingSocket);
+            var updatedPlayers = [{ name: name, color: color }].concat(_this.state.players);
+            _this.setState({ players: updatedPlayers });
         });
 
         _clientRoutes.socket.on('member denied', function (requestingSocket) {
@@ -8769,10 +8780,19 @@ var RemoteGame = function (_Component) {
             _this.setState({ chat: newChat });
         });
 
+        _clientRoutes.socket.on('member left'), function (name) {
+            //remove from player list
+            var updatedPlayers = _this.state.players.filter(function (player) {
+                player.name != name;
+            });
+            _this.setState({ players: updatedPlayers });
+        };
+
         _this.handleRequest = _this.handleRequest.bind(_this);
         _this.removeRequest = _this.removeRequest.bind(_this);
         _this.acceptRequest = _this.acceptRequest.bind(_this);
         _this.denyRequest = _this.denyRequest.bind(_this);
+        _this.changeMessage = _this.changeMessage.bind(_this);
         _this.submitChat = _this.submitChat.bind(_this);
         return _this;
     }
@@ -8785,12 +8805,13 @@ var RemoteGame = function (_Component) {
     }, {
         key: 'componentWillUnmount',
         value: function componentWillUnmount() {
-            //also remove socket from game room? or at least emit that left
             _clientRoutes.socket.off('trying to join');
             _clientRoutes.socket.off('cancel request');
             _clientRoutes.socket.off('game data');
             _clientRoutes.socket.off('new member');
             _clientRoutes.socket.off('member denied');
+            _clientRoutes.socket.off('new message');
+            _clientRoutes.socket.emit('member left');
         }
     }, {
         key: 'handleRequest',
@@ -8822,10 +8843,16 @@ var RemoteGame = function (_Component) {
             _clientRoutes.socket.emit('denied', request.requestingSocket, request.roomToJoin);
         }
     }, {
+        key: 'changeMessage',
+        value: function changeMessage(event) {
+            this.setState({ message: event.target.value });
+        }
+    }, {
         key: 'submitChat',
         value: function submitChat(event) {
             event.preventDefault();
-            _clientRoutes.socket.emit('chat message', event.target.value, this.state.params.gameRoom);
+            document.getElementById('chatInput').value = '';
+            _clientRoutes.socket.emit('chat message', this.state.message, this.state.params.gameRoom);
         }
     }, {
         key: 'render',
@@ -8841,26 +8868,35 @@ var RemoteGame = function (_Component) {
                     _react2.default.createElement(
                         'div',
                         { id: 'requests' },
-                        'Requests to Join',
                         _react2.default.createElement(
-                            'ul',
-                            null,
-                            this.state.requests.map(function (request) {
-                                return _react2.default.createElement(_requestToJoin2.default, { key: request.name, acceptRequest: _this2.acceptRequest, denyRequest: _this2.denyRequest, request: request });
+                            'div',
+                            { id: 'requestTitle' },
+                            'Requests To Join:'
+                        ),
+                        _react2.default.createElement(
+                            'div',
+                            { id: 'requestList' },
+                            this.state.requests.map(function (request, index) {
+                                return _react2.default.createElement(_requestToJoin2.default, { key: index, acceptRequest: _this2.acceptRequest, denyRequest: _this2.denyRequest, request: request });
                             })
                         )
                     ),
                     _react2.default.createElement(
                         'div',
                         { id: 'chat' },
-                        'Room Discussion',
                         _react2.default.createElement(
-                            'ul',
-                            null,
-                            this.state.chat.map(function (message) {
+                            'div',
+                            { id: 'roomName' },
+                            'Room: ',
+                            this.state.params.gameRoom
+                        ),
+                        _react2.default.createElement(
+                            'div',
+                            { id: 'chatMessages' },
+                            this.state.chat.map(function (message, index) {
                                 return _react2.default.createElement(
                                     'div',
-                                    { key: message.sender },
+                                    { className: 'chatMessage', key: index },
                                     message.sender,
                                     ': ',
                                     message.message
@@ -8870,14 +8906,29 @@ var RemoteGame = function (_Component) {
                         _react2.default.createElement(
                             'form',
                             { id: 'chatForm', onSubmit: this.submitChat },
-                            _react2.default.createElement('input', { type: 'text', id: 'chatInput', className: 'inline' }),
+                            _react2.default.createElement('input', { type: 'text', id: 'chatInput', className: 'inline', onChange: this.changeMessage }),
                             _react2.default.createElement('input', { type: 'submit', id: 'chatSubmit', className: 'inline' })
                         )
                     ),
                     _react2.default.createElement(
                         'div',
                         { id: 'players' },
-                        'Players'
+                        _react2.default.createElement(
+                            'div',
+                            { id: 'playersTitle' },
+                            'Players'
+                        ),
+                        _react2.default.createElement(
+                            'div',
+                            { id: 'playersList' },
+                            this.state.players.map(function (player, index) {
+                                return _react2.default.createElement(
+                                    'div',
+                                    { id: 'player', key: index },
+                                    player.name
+                                );
+                            })
+                        )
                     )
                 ),
                 _react2.default.createElement(

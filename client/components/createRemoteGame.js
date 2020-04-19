@@ -7,17 +7,18 @@ export default class createRemoteGame extends Component {
         super (props);
         this.state = {
             newGameRoom: '',
+            userName: '',
             createRoomMessage: '',
             remoteGame: false
         }
 
         this.handleChange = this.handleChange.bind(this);
+        this.userNameChange = this.userNameChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         
         socket.on('new room created', (msg) => {
             this.setState({remoteGame: true});
             console.log("room created: ", msg);
-            //socket.emit('showRooms');
         });
 
         socket.on('room name already taken', (msg) => {
@@ -36,16 +37,19 @@ export default class createRemoteGame extends Component {
         this.setState({newGameRoom: event.target.value});
     }
 
+    userNameChange(event) {
+        this.setState({userName: event.target.value});
+    }
+
     handleSubmit(event) {
         event.preventDefault();
         //do more stringenet checking here 
-        if(this.state.newGameRoom === '') {
+        if(this.state.newGameRoom === '' || this.state.userName === '') {
             return;
         }
         document.getElementById('createGameMessage').innerHTML = '';
         document.getElementById('newRoomName').value = '';
-        socket.emit('showRooms');
-        socket.emit('createRoom', this.state.newGameRoom, socket.id); 
+        socket.emit('create room', this.state.newGameRoom, this.state.userName); 
     }
 
     render () {
@@ -57,7 +61,8 @@ export default class createRemoteGame extends Component {
             <div id='createGame' className='homeScreenOption'>
                 <form onSubmit={this.handleSubmit}>
                     Create Game
-                    <input id='newRoomName' type='text' className='homeInput' onChange={this.handleChange}></input>
+                    <input id='newRoomName' className='homeInput' type='text' onChange={this.handleChange}></input>
+                    <input id='userName' className='homeInput' type='text' onChange={this.userNameChange}></input>
                     <input type='submit'></input>
                     <div id='createGameMessage'>{this.state.createGameMessage}</div>
                 </form>

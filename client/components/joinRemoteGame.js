@@ -46,7 +46,7 @@ export default class joinRemoteGame extends Component {
     }
 
     cancelRequest() {
-        socket.emit('cancelRequest', this.state.roomToJoin);
+        socket.emit('cancel request', this.state.roomToJoin);
         this.setState({roomToJoin: '', waitingForResponse: false});
     }
 
@@ -58,7 +58,7 @@ export default class joinRemoteGame extends Component {
         }
         document.getElementById('joinRoomMessage').innerHTML = '';
         document.getElementById('roomToJoin').value = '';
-        socket.emit('joinRoom', this.state.roomToJoin, this.state.name);
+        socket.emit('join room', this.state.roomToJoin, this.state.name);
         this.setState({waitingForResponse:true});  
     }
 

@@ -9,7 +9,9 @@ export default class RemoteGame extends Component {
 
         this.state = {
             requests: [],
-            chat: [{sender: 'mitch', message: 'hey there guys'}],
+            chat: [],
+            players: [],
+            message: '',
             params: QueryString.parse(location.search),
             acceptedToRoom: false,
             gameData: {}
@@ -27,8 +29,11 @@ export default class RemoteGame extends Component {
             console.log(gameData);
         })
 
-        socket.on('new member', (requestingSocket) => {
+        socket.on('new member', (requestingSocket, name, color) => {
+            console.log('new member');
             this.removeRequest(requestingSocket);
+            let updatedPlayers = [{name: name, color: color}].concat(this.state.players);
+            this.setState({players: updatedPlayers});
         })
 
         socket.on('member denied', (requestingSocket) => {
@@ -40,10 +45,19 @@ export default class RemoteGame extends Component {
             this.setState({chat: newChat});
         })
 
+        socket.on('member left'), (name) => {
+            //remove from player list
+            let updatedPlayers = this.state.players.filter(player => {
+                player.name != name
+            })
+            this.setState({players: updatedPlayers});
+        }
+
         this.handleRequest = this.handleRequest.bind(this);
         this.removeRequest = this.removeRequest.bind(this);
         this.acceptRequest = this.acceptRequest.bind(this);
         this.denyRequest = this.denyRequest.bind(this);
+        this.changeMessage = this.changeMessage.bind(this);
         this.submitChat = this.submitChat.bind(this);
     }
 
@@ -52,12 +66,13 @@ export default class RemoteGame extends Component {
     }
 
     componentWillUnmount() {
-        //also remove socket from game room? or at least emit that left
         socket.off('trying to join');
         socket.off('cancel request');
         socket.off('game data');
         socket.off('new member');
         socket.off('member denied');
+        socket.off('new message');
+        socket.emit('member left');
     }
     
     handleRequest(name, requestingSocket, roomToJoin) {
@@ -83,9 +98,14 @@ export default class RemoteGame extends Component {
         socket.emit('denied', request.requestingSocket, request.roomToJoin);
     }
 
+    changeMessage(event) {
+        this.setState({message: event.target.value});
+    }
+
     submitChat(event) {
         event.preventDefault();
-        socket.emit('chat message', event.target.value, this.state.params.gameRoom);
+        document.getElementById('chatInput').value = '';
+        socket.emit('chat message', this.state.message, this.state.params.gameRoom);
     }
 
     render() {
@@ -93,31 +113,42 @@ export default class RemoteGame extends Component {
             <div id='remoteGame'>
             <div id='topBar'>
                 <div id='requests'>
-                    Requests to Join
-                    <ul>
-                    {this.state.requests.map(request => {
-                        return <RequestToJoin key={request.name} acceptRequest={this.acceptRequest} denyRequest={this.denyRequest} request={request}/>
-                    })}
-                    </ul>
+                    <div id='requestTitle'>
+                        Requests To Join:
+                    </div>
+                    <div id='requestList'>
+                        {this.state.requests.map((request, index) => {
+                            return <RequestToJoin key={index} acceptRequest={this.acceptRequest} denyRequest={this.denyRequest} request={request}/>
+                        })}
+                    </div>
                 </div>
                 <div id='chat'>
-                    Room Discussion
-                    <ul>
-                    {this.state.chat.map(message => {
-                        return <div key={message.sender}>{message.sender}: {message.message}</div>
+                    <div id='roomName'>
+                        Room: {this.state.params.gameRoom}
+                    </div>
+                    <div id='chatMessages'>
+                    {this.state.chat.map((message, index) => {
+                        return <div className='chatMessage' key={index}>{message.sender}: {message.message}</div>
                     })}
-                    </ul>
+                    </div>
                     <form id='chatForm' onSubmit={this.submitChat}>
-                    <input type='text' id='chatInput' className='inline'></input>
-                    <input type='submit' id='chatSubmit' className='inline'></input>
+                        <input type='text' id='chatInput' className='inline' onChange={this.changeMessage}></input>
+                        <input type='submit' id='chatSubmit' className='inline'></input>
                     </form>
                 </div>
                 <div id='players'>
-                    Players
+                    <div id='playersTitle'>
+                        Players
+                    </div>
+                    <div id='playersList'>
+                        {this.state.players.map((player, index) => {
+                            return <div id='player' key={index}>{player.name}</div>
+                        })}
+                    </div>
                 </div>
             </div>
             <div id='gameBoard'>
-                    game board
+                game board
             </div>
             </div>
         )
