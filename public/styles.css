@@ -119,3 +119,27 @@ ul{
     border:1px solid black;
     overflow:scroll;
 }
+
+.redPlayer{
+    color: red;
+    float:left;
+}
+
+.bluePlayer{
+    color: blue;
+    float:right;
+}
+
+.player{
+
+}
+
+.leftArrow:hover{
+    cursor:pointer;
+    color:red;
+}
+
+.rightArrow:hover{
+    cursor: pointer;
+    color:blue;
+}

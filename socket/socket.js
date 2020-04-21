@@ -6,7 +6,6 @@ module.exports = io => {
         socket.on('disconnect', function() {
             io.emit('user disconnected');
             //cancel all join requests
-            // remove admin status from rooms list
         })
 
         socket.on('create room', (newRoomName, userName) => {
@@ -17,8 +16,9 @@ module.exports = io => {
                 //console.log('my rooms: ', io.sockets.sockets.)
                 socket.join(newRoomName);
                 io.sockets.sockets[socket.id].name = userName;
+                let color = userName.length %2 === 0 ? 'blue' : 'red';
                 io.to(`${socket.id}`).emit('new room created', newRoomName);
-                io.in(newRoomName).emit('new member', socket.id, userName)
+                io.in(newRoomName).emit('new member', socket.id, [{name: userName, socket: socket.id, color: color}])
             }
         })
 
@@ -40,8 +40,16 @@ module.exports = io => {
                 //unjoin socket from all other rooms
                 io.sockets.sockets[requestingSocket].join(roomToJoin);
                 io.sockets.sockets[requestingSocket].name = name;
+                let color = name.length %2 === 0 ? 'blue' : 'red';
+                io.sockets.sockets[requestingSocket].color = color;
+                let players = [];
+                Object.keys(io.sockets.adapter.rooms[roomToJoin].sockets).forEach(socket => {
+                    console.log(io.sockets.sockets[socket].name)
+                    players = players.concat({name: io.sockets.sockets[socket].name, socket: socket, color: io.sockets.sockets[socket].color});
+                    console.log('players: ', players)
+                });
                 io.to(requestingSocket).emit('accepted', roomToJoin);
-                io.in(roomToJoin).emit('new member', requestingSocket, io.sockets.sockets[requestingSocket].name);  
+                io.in(roomToJoin).emit('new member', requestingSocket, players);  
             }
         })
 
@@ -64,6 +72,12 @@ module.exports = io => {
             if(io.sockets.adapter.rooms[room].sockets[socket.id]){
                 io.in(room).emit('new message', io.sockets.sockets[socket.id].name, message);
             }
+        })
+
+        socket.on('change color', (room) => {
+            console.log('change color: ', socket.id);
+            io.sockets.sockets[socket.id].color = io.sockets.sockets[socket.id].color === 'blue' ? 'red' : 'blue';
+            io.in(room).emit('change color', socket.id, io.sockets.sockets[socket.id].color);
         })
 
         socket.on('member left', (room) => {

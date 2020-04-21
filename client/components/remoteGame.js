@@ -29,11 +29,10 @@ export default class RemoteGame extends Component {
             console.log(gameData);
         })
 
-        socket.on('new member', (requestingSocket, name, color) => {
-            console.log('new member');
+        socket.on('new member', (requestingSocket, players) => {
+            console.log('new member, players: ', players);
             this.removeRequest(requestingSocket);
-            let updatedPlayers = [{name: name, color: color}].concat(this.state.players);
-            this.setState({players: updatedPlayers});
+            this.setState({players: players});
         })
 
         socket.on('member denied', (requestingSocket) => {
@@ -43,6 +42,18 @@ export default class RemoteGame extends Component {
         socket.on('new message', (sender, message) => {
             let newChat = [{sender: sender, message: message}].concat(this.state.chat)
             this.setState({chat: newChat});
+        })
+
+        socket.on('change color', (socketId, color) => {
+            let updatedPlayers = [...this.state.players];
+            let indexId = this.state.players.findIndex(player => 
+                player.socket == socketId
+            )
+            console.log(indexId);
+            if(indexId > -1){
+                updatedPlayers[indexId].color = color;
+                this.setState({players: updatedPlayers});
+            }
         })
 
         socket.on('member left'), (name) => {
@@ -59,6 +70,7 @@ export default class RemoteGame extends Component {
         this.denyRequest = this.denyRequest.bind(this);
         this.changeMessage = this.changeMessage.bind(this);
         this.submitChat = this.submitChat.bind(this);
+        this.changeColor = this.changeColor.bind(this);
     }
 
     componentDidMount() {
@@ -72,6 +84,7 @@ export default class RemoteGame extends Component {
         socket.off('new member');
         socket.off('member denied');
         socket.off('new message');
+        socket.off('change color');
         socket.emit('member left');
     }
     
@@ -108,6 +121,10 @@ export default class RemoteGame extends Component {
         socket.emit('chat message', this.state.message, this.state.params.gameRoom);
     }
 
+    changeColor(){
+        socket.emit('change color', this.state.params.gameRoom);
+    }
+
     render() {
         return (
             <div id='remoteGame'>
@@ -138,11 +155,23 @@ export default class RemoteGame extends Component {
                 </div>
                 <div id='players'>
                     <div id='playersTitle'>
-                        Players
+                        Players:
                     </div>
                     <div id='playersList'>
                         {this.state.players.map((player, index) => {
-                            return <div id='player' key={index}>{player.name}</div>
+                            if(player.color === 'red') {
+                                if(player.socket === socket.id){
+                                    return <div className='redPlayer' key={index}>{player.name}<span className='rightArrow' onClick={this.changeColor}>&rarr;</span></div>
+                                }else {
+                                    return <div className='redPlayer' key={index}>{player.name}</div>
+                                }
+                            }else if(player.color === 'blue'){
+                                if(player.socket === socket.id){
+                                    return <div className='bluePlayer' key={index}><span className='leftArrow' onClick={this.changeColor}>&larr;</span>{player.name}</div>
+                                }else {
+                                    return <div className='bluePlayer' key={index}>{player.name}</div>
+                                }
+                            }
                         })}
                     </div>
                 </div>
