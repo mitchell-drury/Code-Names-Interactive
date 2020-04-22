@@ -7282,20 +7282,32 @@ var RemoteGame = function (_Component) {
             var indexId = _this.state.players.findIndex(function (player) {
                 return player.socket == socketId;
             });
-            console.log(indexId);
             if (indexId > -1) {
                 updatedPlayers[indexId].color = color;
                 _this.setState({ players: updatedPlayers });
             }
         });
 
-        _clientRoutes.socket.on('member left'), function (name) {
-            //remove from player list
+        _clientRoutes.socket.on('change ready', function (socketId, readyState) {
+            var updatedPlayers = [].concat(_toConsumableArray(_this.state.players));
+            var indexId = _this.state.players.findIndex(function (player) {
+                return player.socket == socketId;
+            });
+            if (indexId > -1) {
+                updatedPlayers[indexId].ready = readyState;
+                _this.setState({ players: updatedPlayers });
+            }
+        });
+
+        _clientRoutes.socket.on('member left', function (socket) {
+            console.log(socket, ' to remove');
             var updatedPlayers = _this.state.players.filter(function (player) {
-                player.name != name;
+                return player.socket != socket;
             });
             _this.setState({ players: updatedPlayers });
-        };
+        });
+
+        _clientRoutes.socket.on('start game', function () {});
 
         _this.handleRequest = _this.handleRequest.bind(_this);
         _this.removeRequest = _this.removeRequest.bind(_this);
@@ -7304,6 +7316,7 @@ var RemoteGame = function (_Component) {
         _this.changeMessage = _this.changeMessage.bind(_this);
         _this.submitChat = _this.submitChat.bind(_this);
         _this.changeColor = _this.changeColor.bind(_this);
+        _this.changeReady = _this.changeReady.bind(_this);
         return _this;
     }
 
@@ -7320,9 +7333,10 @@ var RemoteGame = function (_Component) {
             _clientRoutes.socket.off('game data');
             _clientRoutes.socket.off('new member');
             _clientRoutes.socket.off('member denied');
+            _clientRoutes.socket.off('member left');
             _clientRoutes.socket.off('new message');
             _clientRoutes.socket.off('change color');
-            _clientRoutes.socket.emit('member left');
+            _clientRoutes.socket.emit('member left', this.state.params.gameRoom);
         }
     }, {
         key: 'handleRequest',
@@ -7369,6 +7383,12 @@ var RemoteGame = function (_Component) {
         key: 'changeColor',
         value: function changeColor() {
             _clientRoutes.socket.emit('change color', this.state.params.gameRoom);
+        }
+    }, {
+        key: 'changeReady',
+        value: function changeReady(event) {
+            console.log('checkbox event: ', event.target.checked);
+            _clientRoutes.socket.emit('change ready', this.state.params.gameRoom, event.target.checked);
         }
     }, {
         key: 'render',
@@ -7437,12 +7457,17 @@ var RemoteGame = function (_Component) {
                         _react2.default.createElement(
                             'div',
                             { id: 'playersList' },
-                            this.state.players.map(function (player, index) {
-                                if (player.color === 'red') {
+                            _react2.default.createElement(
+                                'div',
+                                { id: 'redPlayers' },
+                                this.state.players.filter(function (player) {
+                                    return player.color == 'red';
+                                }).map(function (player, index) {
                                     if (player.socket === _clientRoutes.socket.id) {
                                         return _react2.default.createElement(
                                             'div',
                                             { className: 'redPlayer', key: index },
+                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady }),
                                             player.name,
                                             _react2.default.createElement(
                                                 'span',
@@ -7451,13 +7476,29 @@ var RemoteGame = function (_Component) {
                                             )
                                         );
                                     } else {
-                                        return _react2.default.createElement(
-                                            'div',
-                                            { className: 'redPlayer', key: index },
-                                            player.name
-                                        );
+                                        if (!player.ready) {
+                                            return _react2.default.createElement(
+                                                'div',
+                                                { className: 'redPlayer', key: index },
+                                                player.name
+                                            );
+                                        } else {
+                                            return _react2.default.createElement(
+                                                'div',
+                                                { className: 'redPlayer', key: index },
+                                                '\u2611',
+                                                player.name
+                                            );
+                                        }
                                     }
-                                } else if (player.color === 'blue') {
+                                })
+                            ),
+                            _react2.default.createElement(
+                                'div',
+                                { id: 'bluePlayers' },
+                                this.state.players.filter(function (player) {
+                                    return player.color == 'blue';
+                                }).map(function (player, index) {
                                     if (player.socket === _clientRoutes.socket.id) {
                                         return _react2.default.createElement(
                                             'div',
@@ -7467,17 +7508,27 @@ var RemoteGame = function (_Component) {
                                                 { className: 'leftArrow', onClick: _this2.changeColor },
                                                 '\u2190'
                                             ),
-                                            player.name
+                                            player.name,
+                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady })
                                         );
                                     } else {
-                                        return _react2.default.createElement(
-                                            'div',
-                                            { className: 'bluePlayer', key: index },
-                                            player.name
-                                        );
+                                        if (!player.ready) {
+                                            return _react2.default.createElement(
+                                                'div',
+                                                { className: 'bluePlayer', key: index },
+                                                player.name
+                                            );
+                                        } else {
+                                            return _react2.default.createElement(
+                                                'div',
+                                                { className: 'bluePlayer', key: index },
+                                                player.name,
+                                                '\u2611'
+                                            );
+                                        }
                                     }
-                                }
-                            })
+                                })
+                            )
                         )
                     )
                 ),

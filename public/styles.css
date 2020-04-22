@@ -117,21 +117,20 @@ ul{
 #players{
     width:24%;
     border:1px solid black;
-    overflow:scroll;
 }
 
 .redPlayer{
     color: red;
-    float:left;
 }
 
 .bluePlayer{
     color: blue;
-    float:right;
 }
 
-.player{
-
+#redPlayers, #bluePlayers{
+    width:49%;
+    overflow: scroll;
+    display:inline-block;
 }
 
 .leftArrow:hover{

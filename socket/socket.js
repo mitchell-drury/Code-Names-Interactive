@@ -4,7 +4,8 @@ module.exports = io => {
         console.log('Hooked up! ', socket.id);
 
         socket.on('disconnect', function() {
-            io.emit('user disconnected');
+            console.log('rooms after discconnect: ', io.sockets.adapter.rooms);
+            io.emit('member left', socket.id);
             //cancel all join requests
         })
 
@@ -15,10 +16,11 @@ module.exports = io => {
                 //****unjoin socket from all other rooms*****
                 //console.log('my rooms: ', io.sockets.sockets.)
                 socket.join(newRoomName);
+                let color = userName.length %2 === 0 ? 'blue' : 'red';                
                 io.sockets.sockets[socket.id].name = userName;
-                let color = userName.length %2 === 0 ? 'blue' : 'red';
+                io.sockets.sockets[socket.id].color = color;
                 io.to(`${socket.id}`).emit('new room created', newRoomName);
-                io.in(newRoomName).emit('new member', socket.id, [{name: userName, socket: socket.id, color: color}])
+                io.in(newRoomName).emit('new member', socket.id, [{name: userName, socket: socket.id, color: color, ready: false}])
             }
         })
 
@@ -42,11 +44,11 @@ module.exports = io => {
                 io.sockets.sockets[requestingSocket].name = name;
                 let color = name.length %2 === 0 ? 'blue' : 'red';
                 io.sockets.sockets[requestingSocket].color = color;
+                io.sockets.sockets[requestingSocket].ready = false;
                 let players = [];
                 Object.keys(io.sockets.adapter.rooms[roomToJoin].sockets).forEach(socket => {
                     console.log(io.sockets.sockets[socket].name)
-                    players = players.concat({name: io.sockets.sockets[socket].name, socket: socket, color: io.sockets.sockets[socket].color});
-                    console.log('players: ', players)
+                    players = players.concat({name: io.sockets.sockets[socket].name, socket: socket, color: io.sockets.sockets[socket].color, ready: io.sockets.sockets[socket].ready});
                 });
                 io.to(requestingSocket).emit('accepted', roomToJoin);
                 io.in(roomToJoin).emit('new member', requestingSocket, players);  
@@ -80,17 +82,21 @@ module.exports = io => {
             io.in(room).emit('change color', socket.id, io.sockets.sockets[socket.id].color);
         })
 
+        socket.on('change ready', (room, readyState) => {
+            console.log('ready changsted');
+            io.in(room).emit('change ready', socket.id, readyState);
+        })
+
         socket.on('member left', (room) => {
-            console.log('member left: ', room);
+            console.log(socket.id, ' left: ', room);
             if(!io.sockets.adapter.rooms[room]){
                 return;
             } else if(io.sockets.adapter.rooms[room].sockets[socket.id]){
-                io.in(room).emit('member left', io.sockets.socket[socket.id].name);
+                io.in(room).emit('member left', socket.id);
             }
         })
 
         socket.on('get game data', (room) => {
-            //console.log('rooms: ', io.sockets.adapter.rooms);
             if(!io.sockets.adapter.rooms[room]){
                 return;
             } else if(io.sockets.adapter.rooms[room].sockets[socket.id]){
