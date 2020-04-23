@@ -7095,7 +7095,7 @@ var joinRemoteGame = function (_Component) {
             }
             document.getElementById('joinRoomMessage').innerHTML = '';
             document.getElementById('roomToJoin').value = '';
-            _clientRoutes.socket.emit('join room', this.state.roomToJoin, this.state.name);
+            _clientRoutes.socket.emit('request to join', this.state.roomToJoin, this.state.name);
             this.setState({ waitingForResponse: true });
         }
     }, {
@@ -7224,8 +7224,6 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -7241,76 +7239,33 @@ var RemoteGame = function (_Component) {
         var _this = _possibleConstructorReturn(this, (RemoteGame.__proto__ || Object.getPrototypeOf(RemoteGame)).call(this, props));
 
         _this.state = {
-            requests: [],
+            roomData: {
+                sockets: {},
+                requests: {},
+                words: {},
+                gameStatus: 'waiting'
+            },
             chat: [],
-            players: [],
             message: '',
             params: QueryString.parse(location.search),
-            acceptedToRoom: false,
             gameData: {}
         };
 
-        _clientRoutes.socket.on('trying to join', function (name, requestingSocket, room) {
-            _this.handleRequest(name, requestingSocket, room);
+        _clientRoutes.socket.on('room data', function (roomData) {
+            console.log('room data: ', roomData);
+            _this.setState({ roomData: roomData });
         });
 
-        _clientRoutes.socket.on('cancel request', function (requestingSocket) {
-            _this.removeRequest(requestingSocket);
-        });
-
-        _clientRoutes.socket.on('game data', function (gameData) {
-            console.log(gameData);
-        });
-
-        _clientRoutes.socket.on('new member', function (requestingSocket, players) {
-            console.log('new member, players: ', players);
-            _this.removeRequest(requestingSocket);
-            _this.setState({ players: players });
-        });
-
-        _clientRoutes.socket.on('member denied', function (requestingSocket) {
-            _this.removeRequest(requestingSocket);
-        });
-
-        _clientRoutes.socket.on('new message', function (sender, message) {
-            var newChat = [{ sender: sender, message: message }].concat(_this.state.chat);
+        _clientRoutes.socket.on('new message', function (sender, message, color) {
+            var newChat = [{ sender: sender, message: message, color: color }].concat(_this.state.chat);
             _this.setState({ chat: newChat });
         });
 
-        _clientRoutes.socket.on('change color', function (socketId, color) {
-            var updatedPlayers = [].concat(_toConsumableArray(_this.state.players));
-            var indexId = _this.state.players.findIndex(function (player) {
-                return player.socket == socketId;
-            });
-            if (indexId > -1) {
-                updatedPlayers[indexId].color = color;
-                _this.setState({ players: updatedPlayers });
-            }
+        _clientRoutes.socket.on('start game', function () {
+            console.log('start game');
+            //TODO - make start button available
         });
 
-        _clientRoutes.socket.on('change ready', function (socketId, readyState) {
-            var updatedPlayers = [].concat(_toConsumableArray(_this.state.players));
-            var indexId = _this.state.players.findIndex(function (player) {
-                return player.socket == socketId;
-            });
-            if (indexId > -1) {
-                updatedPlayers[indexId].ready = readyState;
-                _this.setState({ players: updatedPlayers });
-            }
-        });
-
-        _clientRoutes.socket.on('member left', function (socket) {
-            console.log(socket, ' to remove');
-            var updatedPlayers = _this.state.players.filter(function (player) {
-                return player.socket != socket;
-            });
-            _this.setState({ players: updatedPlayers });
-        });
-
-        _clientRoutes.socket.on('start game', function () {});
-
-        _this.handleRequest = _this.handleRequest.bind(_this);
-        _this.removeRequest = _this.removeRequest.bind(_this);
         _this.acceptRequest = _this.acceptRequest.bind(_this);
         _this.denyRequest = _this.denyRequest.bind(_this);
         _this.changeMessage = _this.changeMessage.bind(_this);
@@ -7323,49 +7278,24 @@ var RemoteGame = function (_Component) {
     _createClass(RemoteGame, [{
         key: 'componentDidMount',
         value: function componentDidMount() {
-            _clientRoutes.socket.emit('get game data', this.state.params.gameRoom);
+            _clientRoutes.socket.emit('get room data', this.state.params.gameRoom);
         }
     }, {
         key: 'componentWillUnmount',
         value: function componentWillUnmount() {
-            _clientRoutes.socket.off('trying to join');
-            _clientRoutes.socket.off('cancel request');
-            _clientRoutes.socket.off('game data');
-            _clientRoutes.socket.off('new member');
-            _clientRoutes.socket.off('member denied');
-            _clientRoutes.socket.off('member left');
             _clientRoutes.socket.off('new message');
-            _clientRoutes.socket.off('change color');
-            _clientRoutes.socket.emit('member left', this.state.params.gameRoom);
-        }
-    }, {
-        key: 'handleRequest',
-        value: function handleRequest(name, requestingSocket, roomToJoin) {
-            console.log('user trying to join: ', name, ' ', requestingSocket, ' state: ', this.state);
-            var requests = [{ name: name, requestingSocket: requestingSocket, roomToJoin: roomToJoin }].concat(this.state.requests);
-            this.setState({
-                requests: requests
-            });
-        }
-    }, {
-        key: 'removeRequest',
-        value: function removeRequest(requestingSocket) {
-            var updatedRequests = this.state.requests.filter(function (request) {
-                return request.requestingSocket != requestingSocket;
-            });
-            this.setState({
-                requests: updatedRequests
-            });
+            _clientRoutes.socket.off('room data');
+            _clientRoutes.socket.emit('left room', this.state.params.gameRoom);
         }
     }, {
         key: 'acceptRequest',
         value: function acceptRequest(request) {
-            _clientRoutes.socket.emit('accepted', request.name, request.requestingSocket, request.roomToJoin);
+            _clientRoutes.socket.emit('accepted', request.name, request.socket, this.state.params.gameRoom);
         }
     }, {
         key: 'denyRequest',
         value: function denyRequest(request) {
-            _clientRoutes.socket.emit('denied', request.requestingSocket, request.roomToJoin);
+            _clientRoutes.socket.emit('denied', request.socket, this.state.params.gameRoom);
         }
     }, {
         key: 'changeMessage',
@@ -7412,8 +7342,8 @@ var RemoteGame = function (_Component) {
                         _react2.default.createElement(
                             'div',
                             { id: 'requestList' },
-                            this.state.requests.map(function (request, index) {
-                                return _react2.default.createElement(_requestToJoin2.default, { key: index, acceptRequest: _this2.acceptRequest, denyRequest: _this2.denyRequest, request: request });
+                            Object.keys(this.state.roomData.requests).map(function (request, index) {
+                                return _react2.default.createElement(_requestToJoin2.default, { key: index, acceptRequest: _this2.acceptRequest, denyRequest: _this2.denyRequest, request: _this2.state.roomData.requests[request] });
                             })
                         )
                     ),
@@ -7432,7 +7362,7 @@ var RemoteGame = function (_Component) {
                             this.state.chat.map(function (message, index) {
                                 return _react2.default.createElement(
                                     'div',
-                                    { className: 'chatMessage', key: index },
+                                    { className: 'chatMessage ' + message.color, key: index },
                                     message.sender,
                                     ': ',
                                     message.message
@@ -7460,15 +7390,15 @@ var RemoteGame = function (_Component) {
                             _react2.default.createElement(
                                 'div',
                                 { id: 'redPlayers' },
-                                this.state.players.filter(function (player) {
-                                    return player.color == 'red';
-                                }).map(function (player, index) {
-                                    if (player.socket === _clientRoutes.socket.id) {
+                                Object.keys(this.state.roomData.sockets).filter(function (socketId) {
+                                    return _this2.state.roomData.sockets[socketId].color == 'red' && _this2.state.roomData.sockets[socketId].inRoom;
+                                }).map(function (socketId, index) {
+                                    if (socketId === _clientRoutes.socket.id) {
                                         return _react2.default.createElement(
                                             'div',
                                             { className: 'redPlayer', key: index },
-                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady }),
-                                            player.name,
+                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady, checked: _this2.state.roomData.sockets[socketId].ready }),
+                                            _this2.state.roomData.sockets[socketId].name,
                                             _react2.default.createElement(
                                                 'span',
                                                 { className: 'rightArrow', onClick: _this2.changeColor },
@@ -7476,18 +7406,18 @@ var RemoteGame = function (_Component) {
                                             )
                                         );
                                     } else {
-                                        if (!player.ready) {
+                                        if (!_this2.state.roomData.sockets[socketId].ready) {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'redPlayer', key: index },
-                                                player.name
+                                                _this2.state.roomData.sockets[socketId].name
                                             );
                                         } else {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'redPlayer', key: index },
                                                 '\u2611',
-                                                player.name
+                                                _this2.state.roomData.sockets[socketId].name
                                             );
                                         }
                                     }
@@ -7496,10 +7426,11 @@ var RemoteGame = function (_Component) {
                             _react2.default.createElement(
                                 'div',
                                 { id: 'bluePlayers' },
-                                this.state.players.filter(function (player) {
-                                    return player.color == 'blue';
-                                }).map(function (player, index) {
-                                    if (player.socket === _clientRoutes.socket.id) {
+                                Object.keys(this.state.roomData.sockets).filter(function (socketId) {
+                                    return _this2.state.roomData.sockets[socketId].color == 'blue' && _this2.state.roomData.sockets[socketId].inRoom;
+                                }).map(function (socketId, index) {
+                                    console.log('socketId: ', socketId);
+                                    if (socketId === _clientRoutes.socket.id) {
                                         return _react2.default.createElement(
                                             'div',
                                             { className: 'bluePlayer', key: index },
@@ -7508,21 +7439,21 @@ var RemoteGame = function (_Component) {
                                                 { className: 'leftArrow', onClick: _this2.changeColor },
                                                 '\u2190'
                                             ),
-                                            player.name,
-                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady })
+                                            _this2.state.roomData.sockets[socketId].name,
+                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady, checked: _this2.state.roomData.sockets[socketId].ready })
                                         );
                                     } else {
-                                        if (!player.ready) {
+                                        if (!_this2.state.roomData.sockets[socketId].ready) {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'bluePlayer', key: index },
-                                                player.name
+                                                _this2.state.roomData.sockets[socketId].name
                                             );
                                         } else {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'bluePlayer', key: index },
-                                                player.name,
+                                                _this2.state.roomData.sockets[socketId].name,
                                                 '\u2611'
                                             );
                                         }

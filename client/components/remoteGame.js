@@ -8,78 +8,33 @@ export default class RemoteGame extends Component {
         super (props);
 
         this.state = {
-            requests: [],
+            roomData: {
+                sockets: {},
+                requests: {},
+                words: {},
+                gameStatus: 'waiting'
+            },
             chat: [],
-            players: [],
             message: '',
             params: QueryString.parse(location.search),
-            acceptedToRoom: false,
             gameData: {}
         }
 
-        socket.on('trying to join', (name, requestingSocket, room) => {
-            this.handleRequest(name, requestingSocket, room);
+        socket.on('room data', (roomData) => {
+            console.log('room data: ', roomData);
+            this.setState({roomData: roomData});
         })
 
-        socket.on('cancel request', (requestingSocket) => {
-            this.removeRequest(requestingSocket);
-        })
-
-        socket.on('game data', (gameData) => {
-            console.log(gameData);
-        })
-
-        socket.on('new member', (requestingSocket, players) => {
-            console.log('new member, players: ', players);
-            this.removeRequest(requestingSocket);
-            this.setState({players: players});
-        })
-
-        socket.on('member denied', (requestingSocket) => {
-            this.removeRequest(requestingSocket);
-        })
-
-        socket.on('new message', (sender, message) => {
-            let newChat = [{sender: sender, message: message}].concat(this.state.chat)
+        socket.on('new message', (sender, message, color) => {
+            let newChat = [{sender: sender, message: message, color: color}].concat(this.state.chat)
             this.setState({chat: newChat});
         })
 
-        socket.on('change color', (socketId, color) => {
-            let updatedPlayers = [...this.state.players];
-            let indexId = this.state.players.findIndex(player => 
-                player.socket == socketId
-            )
-            if(indexId > -1){
-                updatedPlayers[indexId].color = color;
-                this.setState({players: updatedPlayers});
-            }
-        })
-
-        socket.on('change ready', (socketId, readyState) => {
-            let updatedPlayers = [...this.state.players];
-            let indexId = this.state.players.findIndex(player => 
-                player.socket == socketId
-            )
-            if(indexId > -1){
-                updatedPlayers[indexId].ready = readyState;
-                this.setState({players: updatedPlayers});
-            }           
-        })
-
-        socket.on('member left', (socket) => {
-            console.log(socket, ' to remove');
-            let updatedPlayers = this.state.players.filter(player => {
-                return player.socket != socket;
-            })
-            this.setState({players: updatedPlayers});
-        })
-
         socket.on('start game', () => {
-
+            console.log('start game');
+            //TODO - make start button available
         })
 
-        this.handleRequest = this.handleRequest.bind(this);
-        this.removeRequest = this.removeRequest.bind(this);
         this.acceptRequest = this.acceptRequest.bind(this);
         this.denyRequest = this.denyRequest.bind(this);
         this.changeMessage = this.changeMessage.bind(this);
@@ -89,42 +44,21 @@ export default class RemoteGame extends Component {
     }
 
     componentDidMount() {
-        socket.emit('get game data', this.state.params.gameRoom);
+        socket.emit('get room data', this.state.params.gameRoom);
     }
 
     componentWillUnmount() {
-        socket.off('trying to join');
-        socket.off('cancel request');
-        socket.off('game data');
-        socket.off('new member');
-        socket.off('member denied');
-        socket.off('member left');
         socket.off('new message');
-        socket.off('change color');
-        socket.emit('member left', this.state.params.gameRoom);
-    }
-    
-    handleRequest(name, requestingSocket, roomToJoin) {
-        console.log('user trying to join: ', name, ' ', requestingSocket,  ' state: ', this.state);
-        let requests = [{name: name, requestingSocket: requestingSocket, roomToJoin: roomToJoin}].concat(this.state.requests);
-        this.setState({
-            requests: requests
-        })
-    }
-
-    removeRequest(requestingSocket) {
-        let updatedRequests = this.state.requests.filter(request => request.requestingSocket != requestingSocket)
-        this.setState({
-            requests:updatedRequests
-        })    
+        socket.off('room data');
+        socket.emit('left room', this.state.params.gameRoom);
     }
 
     acceptRequest(request) {
-        socket.emit('accepted', request.name, request.requestingSocket, request.roomToJoin);
+        socket.emit('accepted', request.name, request.socket, this.state.params.gameRoom);
     }
 
     denyRequest(request) {
-        socket.emit('denied', request.requestingSocket, request.roomToJoin);
+        socket.emit('denied', request.socket, this.state.params.gameRoom);
     }
 
     changeMessage(event) {
@@ -155,8 +89,8 @@ export default class RemoteGame extends Component {
                         Requests To Join:
                     </div>
                     <div id='requestList'>
-                        {this.state.requests.map((request, index) => {
-                            return <RequestToJoin key={index} acceptRequest={this.acceptRequest} denyRequest={this.denyRequest} request={request}/>
+                        {Object.keys(this.state.roomData.requests).map((request, index) => {
+                            return <RequestToJoin key={index} acceptRequest={this.acceptRequest} denyRequest={this.denyRequest} request={this.state.roomData.requests[request]}/>
                         })}
                     </div>
                 </div>
@@ -166,7 +100,7 @@ export default class RemoteGame extends Component {
                     </div>
                     <div id='chatMessages'>
                     {this.state.chat.map((message, index) => {
-                        return <div className='chatMessage' key={index}>{message.sender}: {message.message}</div>
+                        return <div className={'chatMessage ' + message.color} key={index}>{message.sender}: {message.message}</div>
                     })}
                     </div>
                     <form id='chatForm' onSubmit={this.submitChat}>
@@ -180,32 +114,33 @@ export default class RemoteGame extends Component {
                     </div>
                     <div id='playersList'>
                         <div id='redPlayers'>
-                        {this.state.players.filter(player => player.color == 'red').map((player, index) => {
-                            if(player.socket === socket.id){
-                                return <div className='redPlayer' key={index}><input type='checkbox' onChange={this.changeReady}></input>{player.name}<span className='rightArrow' onClick={this.changeColor}>&rarr;</span></div>
+                        {Object.keys(this.state.roomData.sockets).filter(socketId => this.state.roomData.sockets[socketId].color == 'red' && this.state.roomData.sockets[socketId].inRoom).map((socketId, index) => {
+                            if(socketId === socket.id){
+                                return <div className='redPlayer' key={index}><input type='checkbox' onChange={this.changeReady} checked={this.state.roomData.sockets[socketId].ready}></input>{this.state.roomData.sockets[socketId].name}<span className='rightArrow' onClick={this.changeColor}>&rarr;</span></div>
                             }else {
-                                if(!player.ready){
-                                    return <div className='redPlayer' key={index}>{player.name}</div>
+                                if(!this.state.roomData.sockets[socketId].ready){
+                                    return <div className='redPlayer' key={index}>{this.state.roomData.sockets[socketId].name}</div>
                                 }else {
-                                    return <div className='redPlayer' key={index}>&#9745;{player.name}</div>
+                                    return <div className='redPlayer' key={index}>&#9745;{this.state.roomData.sockets[socketId].name}</div>
                                 }
                             }
                         })}
                         </div>
                         <div id='bluePlayers'>
-                        {this.state.players.filter(player => player.color == 'blue').map((player, index) => {
-                            if(player.socket === socket.id){
-                                return <div className='bluePlayer' key={index}><span className='leftArrow' onClick={this.changeColor}>&larr;</span>{player.name}<input type='checkbox' onChange={this.changeReady}></input></div>
+                        {Object.keys(this.state.roomData.sockets).filter(socketId => this.state.roomData.sockets[socketId].color == 'blue' && this.state.roomData.sockets[socketId].inRoom).map((socketId, index) => {
+                            console.log('socketId: ', socketId)
+                            if(socketId === socket.id){
+                                return <div className='bluePlayer' key={index}><span className='leftArrow' onClick={this.changeColor}>&larr;</span>{this.state.roomData.sockets[socketId].name}<input type='checkbox' onChange={this.changeReady} checked={this.state.roomData.sockets[socketId].ready}></input></div>
                             }else {
-                                if(!player.ready){
-                                    return <div className='bluePlayer' key={index}>{player.name}</div>
+                                if(!this.state.roomData.sockets[socketId].ready){
+                                    return <div className='bluePlayer' key={index}>{this.state.roomData.sockets[socketId].name}</div>
                                 }else {
-                                    return <div className='bluePlayer' key={index}>{player.name}&#9745;</div>
+                                    return <div className='bluePlayer' key={index}>{this.state.roomData.sockets[socketId].name}&#9745;</div>
                                 }
                             }
-                        })}                        
+                        })}
                         </div>
-                    </div>
+                   </div>
                 </div>
             </div>
             <div id='gameBoard'>

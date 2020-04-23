@@ -58,7 +58,7 @@ export default class joinRemoteGame extends Component {
         }
         document.getElementById('joinRoomMessage').innerHTML = '';
         document.getElementById('roomToJoin').value = '';
-        socket.emit('join room', this.state.roomToJoin, this.state.name);
+        socket.emit('request to join', this.state.roomToJoin, this.state.name);
         this.setState({waitingForResponse:true});  
     }
 
