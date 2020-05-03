@@ -10,12 +10,53 @@ export default class RemoteGame extends Component {
         this.state = {
             roomData: {
                 sockets: {},
+                redSpymaster: {socket: null},
+                blueSpymaster: {socket: null},
                 requests: {},
-                words: {},
+                words: [
+                    [
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'}
+                    ],
+                    [
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'}
+                    ],
+                    [
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'}
+                    ],
+                    [
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'}
+                    ],
+                    [
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'},
+                        {word: '-', status: 'hidden', color: 'beige'}
+                    ]
+                ],
+                clues: [],
                 gameStatus: 'waiting'
             },
             chat: [],
             message: '',
+            clue: '',
+            number: '',
             params: QueryString.parse(location.search),
             gameData: {}
         }
@@ -39,8 +80,12 @@ export default class RemoteGame extends Component {
         this.denyRequest = this.denyRequest.bind(this);
         this.changeMessage = this.changeMessage.bind(this);
         this.submitChat = this.submitChat.bind(this);
+        this.changeClue = this.changeClue.bind(this);
+        this.changeNumber = this.changeNumber.bind(this);
+        this.submitClue = this.submitClue.bind(this);
         this.changeColor = this.changeColor.bind(this);
-        this.changeReady = this.changeReady.bind(this);
+        this.changeSpymaster = this.changeSpymaster.bind(this);
+        this.startGame = this.startGame.bind(this);
     }
 
     componentDidMount() {
@@ -71,13 +116,32 @@ export default class RemoteGame extends Component {
         socket.emit('chat message', this.state.message, this.state.params.gameRoom);
     }
 
+    changeClue(event) {
+        this.setState({clue: event.target.value});
+    }
+
+    changeNumber(event) {
+        this.setState({number: event.target.value});
+    }
+
+    submitClue(event) {
+        event.preventDefault();
+        socket.emit('new clue', this.state.params.gameRoom, this.state.clue, this.state.number);
+    }
+
     changeColor(){
         socket.emit('change color', this.state.params.gameRoom);
     }
 
-    changeReady(event) {
+    changeSpymaster(event) {
         console.log('checkbox event: ', event.target.checked);
-        socket.emit('change ready', this.state.params.gameRoom, event.target.checked);
+        socket.emit('change spymaster', this.state.params.gameRoom, event.target.checked);
+    }
+
+    startGame() {
+        if (this.state.roomData.gameStatus === 'waiting') {
+            socket.emit('start game', this.state.params.gameRoom);
+        }
     }
 
     render() {
@@ -95,58 +159,102 @@ export default class RemoteGame extends Component {
                     </div>
                 </div>
                 <div id='chat'>
-                    <div id='roomName'>
-                        Room: {this.state.params.gameRoom}
+                    <div id='dialogue'>
+                        <div id='roomName'>
+                            Room: {this.state.params.gameRoom}
+                        </div>
+                        <div id='chatMessages'>
+                        {this.state.chat.map((message, index) => {
+                            return <div className={'chatMessage ' + message.color} key={index}>{message.sender}: {message.message}</div>
+                        })}
+                        </div>
+                        <form id='chatForm' onSubmit={this.submitChat}>
+                            <input type='text' id='chatInput' className='inline' onChange={this.changeMessage}></input>
+                            <input type='submit' id='chatSubmit' className='inline'></input>
+                        </form>
+                        </div>
+                    <div id='clueInterface'>
+                        <div id='cluesTitle'>Clues</div>
+                        <div id='clues'>
+                            {this.state.roomData.clues.map(clue => {
+                                return <div className='clue'>
+
+                                </div>
+                            })}
+                        </div>
+                        <form id='newClue' onSubmit={this.submitClue}>
+                            <input type='text' placeholder='clue word' onChange={this.changeClue}></input>
+                            <input type='text' placeholder='number' onChange={this.changeNumber}></input>
+                            <input type='submit'></input>
+                        </form>
                     </div>
-                    <div id='chatMessages'>
-                    {this.state.chat.map((message, index) => {
-                        return <div className={'chatMessage ' + message.color} key={index}>{message.sender}: {message.message}</div>
-                    })}
-                    </div>
-                    <form id='chatForm' onSubmit={this.submitChat}>
-                        <input type='text' id='chatInput' className='inline' onChange={this.changeMessage}></input>
-                        <input type='submit' id='chatSubmit' className='inline'></input>
-                    </form>
                 </div>
                 <div id='players'>
                     <div id='playersTitle'>
-                        Players:
+                        Players
                     </div>
                     <div id='playersList'>
                         <div id='redPlayers'>
                         {Object.keys(this.state.roomData.sockets).filter(socketId => this.state.roomData.sockets[socketId].color == 'red' && this.state.roomData.sockets[socketId].inRoom).map((socketId, index) => {
-                            if(socketId === socket.id){
-                                return <div className='redPlayer' key={index}><input type='checkbox' onChange={this.changeReady} checked={this.state.roomData.sockets[socketId].ready}></input>{this.state.roomData.sockets[socketId].name}<span className='rightArrow' onClick={this.changeColor}>&rarr;</span></div>
-                            }else {
-                                if(!this.state.roomData.sockets[socketId].ready){
-                                    return <div className='redPlayer' key={index}>{this.state.roomData.sockets[socketId].name}</div>
-                                }else {
-                                    return <div className='redPlayer' key={index}>&#9745;{this.state.roomData.sockets[socketId].name}</div>
+                            let isSpymaster = socketId === this.state.roomData.redSpymaster.socket;
+                            let spymasterPresent = this.state.roomData.redSpymaster.socket;
+                            
+                            if (socketId === socket.id) {
+                                return <div className='redPlayer' key={index}><input type='checkbox' onChange={this.changeSpymaster} checked={isSpymaster} disabled={!isSpymaster && spymasterPresent}></input>{this.state.roomData.sockets[socketId].name}<span className='rightArrow' onClick={this.changeColor}>&rarr;</span></div>
+                            } else {
+                                if (socketId === this.state.roomData.redSpymaster.socket) {
+                                    return <div className='redPlayer' key={index}>
+                                    &#9745;{this.state.roomData.sockets[socketId].name}
+                                    </div>
+                                } else {
+                                    return <div className='redPlayer' key={index}>
+                                    {this.state.roomData.sockets[socketId].name}
+                                    </div>
                                 }
                             }
-                        })}
+                            }
+                        )}
                         </div>
                         <div id='bluePlayers'>
                         {Object.keys(this.state.roomData.sockets).filter(socketId => this.state.roomData.sockets[socketId].color == 'blue' && this.state.roomData.sockets[socketId].inRoom).map((socketId, index) => {
-                            console.log('socketId: ', socketId)
-                            if(socketId === socket.id){
-                                return <div className='bluePlayer' key={index}><span className='leftArrow' onClick={this.changeColor}>&larr;</span>{this.state.roomData.sockets[socketId].name}<input type='checkbox' onChange={this.changeReady} checked={this.state.roomData.sockets[socketId].ready}></input></div>
-                            }else {
-                                if(!this.state.roomData.sockets[socketId].ready){
-                                    return <div className='bluePlayer' key={index}>{this.state.roomData.sockets[socketId].name}</div>
-                                }else {
-                                    return <div className='bluePlayer' key={index}>{this.state.roomData.sockets[socketId].name}&#9745;</div>
+                            let isSpymaster = socketId === this.state.roomData.blueSpymaster.socket;
+                            let spymasterPresent = this.state.roomData.blueSpymaster.socket;
+                            
+                            if (socketId === socket.id) {
+                                return <div className='bluePlayer' key={index}><input type='checkbox' onChange={this.changeSpymaster} checked={isSpymaster} disabled={!isSpymaster && spymasterPresent}></input>{this.state.roomData.sockets[socketId].name}<span className='rightArrow' onClick={this.changeColor}>&larr;</span></div>
+                            } else {
+                                if (socketId === this.state.roomData.blueSpymaster.socket) {
+                                    return <div className='bluePlayer' key={index}>
+                                    &#9745;{this.state.roomData.sockets[socketId].name}
+                                    </div>
+                                } else {
+                                    return <div className='bluePlayer' key={index}>
+                                    {this.state.roomData.sockets[socketId].name}
+                                    </div>
                                 }
                             }
-                        })}
+                            }
+                        )}
                         </div>
+                    </div>
+                   <div id='startButton' className={this.state.roomData.gameStatus} onClick={this.startGame}>
+                   Start Game
                    </div>
                 </div>
             </div>
             <div id='gameBoard'>
-                game board
+                {this.state.roomData.words.map((row, index) => {
+                    return (<div className='row' key={index}>
+                    {row.map((word, index) => {
+                        return <div className={'box ' + word.status} key={index}>
+                        <div className='word'>{word.word}</div>
+                        </div>
+                    })}
+                    </div>)
+                })}
             </div>
             </div>
+            
         )
     }
 }

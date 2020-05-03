@@ -7241,12 +7241,17 @@ var RemoteGame = function (_Component) {
         _this.state = {
             roomData: {
                 sockets: {},
+                redSpymaster: { socket: null },
+                blueSpymaster: { socket: null },
                 requests: {},
-                words: {},
+                words: [[{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }]],
+                clues: [],
                 gameStatus: 'waiting'
             },
             chat: [],
             message: '',
+            clue: '',
+            number: '',
             params: QueryString.parse(location.search),
             gameData: {}
         };
@@ -7270,8 +7275,12 @@ var RemoteGame = function (_Component) {
         _this.denyRequest = _this.denyRequest.bind(_this);
         _this.changeMessage = _this.changeMessage.bind(_this);
         _this.submitChat = _this.submitChat.bind(_this);
+        _this.changeClue = _this.changeClue.bind(_this);
+        _this.changeNumber = _this.changeNumber.bind(_this);
+        _this.submitClue = _this.submitClue.bind(_this);
         _this.changeColor = _this.changeColor.bind(_this);
-        _this.changeReady = _this.changeReady.bind(_this);
+        _this.changeSpymaster = _this.changeSpymaster.bind(_this);
+        _this.startGame = _this.startGame.bind(_this);
         return _this;
     }
 
@@ -7310,15 +7319,38 @@ var RemoteGame = function (_Component) {
             _clientRoutes.socket.emit('chat message', this.state.message, this.state.params.gameRoom);
         }
     }, {
+        key: 'changeClue',
+        value: function changeClue(event) {
+            this.setState({ clue: event.target.value });
+        }
+    }, {
+        key: 'changeNumber',
+        value: function changeNumber(event) {
+            this.setState({ number: event.target.value });
+        }
+    }, {
+        key: 'submitClue',
+        value: function submitClue(event) {
+            event.preventDefault();
+            _clientRoutes.socket.emit('new clue', this.state.params.gameRoom, this.state.clue, this.state.number);
+        }
+    }, {
         key: 'changeColor',
         value: function changeColor() {
             _clientRoutes.socket.emit('change color', this.state.params.gameRoom);
         }
     }, {
-        key: 'changeReady',
-        value: function changeReady(event) {
+        key: 'changeSpymaster',
+        value: function changeSpymaster(event) {
             console.log('checkbox event: ', event.target.checked);
-            _clientRoutes.socket.emit('change ready', this.state.params.gameRoom, event.target.checked);
+            _clientRoutes.socket.emit('change spymaster', this.state.params.gameRoom, event.target.checked);
+        }
+    }, {
+        key: 'startGame',
+        value: function startGame() {
+            if (this.state.roomData.gameStatus === 'waiting') {
+                _clientRoutes.socket.emit('start game', this.state.params.gameRoom);
+            }
         }
     }, {
         key: 'render',
@@ -7352,28 +7384,55 @@ var RemoteGame = function (_Component) {
                         { id: 'chat' },
                         _react2.default.createElement(
                             'div',
-                            { id: 'roomName' },
-                            'Room: ',
-                            this.state.params.gameRoom
+                            { id: 'dialogue' },
+                            _react2.default.createElement(
+                                'div',
+                                { id: 'roomName' },
+                                'Room: ',
+                                this.state.params.gameRoom
+                            ),
+                            _react2.default.createElement(
+                                'div',
+                                { id: 'chatMessages' },
+                                this.state.chat.map(function (message, index) {
+                                    return _react2.default.createElement(
+                                        'div',
+                                        { className: 'chatMessage ' + message.color, key: index },
+                                        message.sender,
+                                        ': ',
+                                        message.message
+                                    );
+                                })
+                            ),
+                            _react2.default.createElement(
+                                'form',
+                                { id: 'chatForm', onSubmit: this.submitChat },
+                                _react2.default.createElement('input', { type: 'text', id: 'chatInput', className: 'inline', onChange: this.changeMessage }),
+                                _react2.default.createElement('input', { type: 'submit', id: 'chatSubmit', className: 'inline' })
+                            )
                         ),
                         _react2.default.createElement(
                             'div',
-                            { id: 'chatMessages' },
-                            this.state.chat.map(function (message, index) {
-                                return _react2.default.createElement(
-                                    'div',
-                                    { className: 'chatMessage ' + message.color, key: index },
-                                    message.sender,
-                                    ': ',
-                                    message.message
-                                );
-                            })
-                        ),
-                        _react2.default.createElement(
-                            'form',
-                            { id: 'chatForm', onSubmit: this.submitChat },
-                            _react2.default.createElement('input', { type: 'text', id: 'chatInput', className: 'inline', onChange: this.changeMessage }),
-                            _react2.default.createElement('input', { type: 'submit', id: 'chatSubmit', className: 'inline' })
+                            { id: 'clueInterface' },
+                            _react2.default.createElement(
+                                'div',
+                                { id: 'cluesTitle' },
+                                'Clues'
+                            ),
+                            _react2.default.createElement(
+                                'div',
+                                { id: 'clues' },
+                                this.state.roomData.clues.map(function (clue) {
+                                    return _react2.default.createElement('div', { className: 'clue' });
+                                })
+                            ),
+                            _react2.default.createElement(
+                                'form',
+                                { id: 'newClue', onSubmit: this.submitClue },
+                                _react2.default.createElement('input', { type: 'text', placeholder: 'clue word', onChange: this.changeClue }),
+                                _react2.default.createElement('input', { type: 'text', placeholder: 'number', onChange: this.changeNumber }),
+                                _react2.default.createElement('input', { type: 'submit' })
+                            )
                         )
                     ),
                     _react2.default.createElement(
@@ -7382,7 +7441,7 @@ var RemoteGame = function (_Component) {
                         _react2.default.createElement(
                             'div',
                             { id: 'playersTitle' },
-                            'Players:'
+                            'Players'
                         ),
                         _react2.default.createElement(
                             'div',
@@ -7393,11 +7452,14 @@ var RemoteGame = function (_Component) {
                                 Object.keys(this.state.roomData.sockets).filter(function (socketId) {
                                     return _this2.state.roomData.sockets[socketId].color == 'red' && _this2.state.roomData.sockets[socketId].inRoom;
                                 }).map(function (socketId, index) {
+                                    var isSpymaster = socketId === _this2.state.roomData.redSpymaster.socket;
+                                    var spymasterPresent = _this2.state.roomData.redSpymaster.socket;
+
                                     if (socketId === _clientRoutes.socket.id) {
                                         return _react2.default.createElement(
                                             'div',
                                             { className: 'redPlayer', key: index },
-                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady, checked: _this2.state.roomData.sockets[socketId].ready }),
+                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeSpymaster, checked: isSpymaster, disabled: !isSpymaster && spymasterPresent }),
                                             _this2.state.roomData.sockets[socketId].name,
                                             _react2.default.createElement(
                                                 'span',
@@ -7406,17 +7468,17 @@ var RemoteGame = function (_Component) {
                                             )
                                         );
                                     } else {
-                                        if (!_this2.state.roomData.sockets[socketId].ready) {
+                                        if (socketId === _this2.state.roomData.redSpymaster.socket) {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'redPlayer', key: index },
+                                                '\u2611',
                                                 _this2.state.roomData.sockets[socketId].name
                                             );
                                         } else {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'redPlayer', key: index },
-                                                '\u2611',
                                                 _this2.state.roomData.sockets[socketId].name
                                             );
                                         }
@@ -7429,44 +7491,67 @@ var RemoteGame = function (_Component) {
                                 Object.keys(this.state.roomData.sockets).filter(function (socketId) {
                                     return _this2.state.roomData.sockets[socketId].color == 'blue' && _this2.state.roomData.sockets[socketId].inRoom;
                                 }).map(function (socketId, index) {
-                                    console.log('socketId: ', socketId);
+                                    var isSpymaster = socketId === _this2.state.roomData.blueSpymaster.socket;
+                                    var spymasterPresent = _this2.state.roomData.blueSpymaster.socket;
+
                                     if (socketId === _clientRoutes.socket.id) {
                                         return _react2.default.createElement(
                                             'div',
                                             { className: 'bluePlayer', key: index },
+                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeSpymaster, checked: isSpymaster, disabled: !isSpymaster && spymasterPresent }),
+                                            _this2.state.roomData.sockets[socketId].name,
                                             _react2.default.createElement(
                                                 'span',
-                                                { className: 'leftArrow', onClick: _this2.changeColor },
+                                                { className: 'rightArrow', onClick: _this2.changeColor },
                                                 '\u2190'
-                                            ),
-                                            _this2.state.roomData.sockets[socketId].name,
-                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeReady, checked: _this2.state.roomData.sockets[socketId].ready })
+                                            )
                                         );
                                     } else {
-                                        if (!_this2.state.roomData.sockets[socketId].ready) {
+                                        if (socketId === _this2.state.roomData.blueSpymaster.socket) {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'bluePlayer', key: index },
+                                                '\u2611',
                                                 _this2.state.roomData.sockets[socketId].name
                                             );
                                         } else {
                                             return _react2.default.createElement(
                                                 'div',
                                                 { className: 'bluePlayer', key: index },
-                                                _this2.state.roomData.sockets[socketId].name,
-                                                '\u2611'
+                                                _this2.state.roomData.sockets[socketId].name
                                             );
                                         }
                                     }
                                 })
                             )
+                        ),
+                        _react2.default.createElement(
+                            'div',
+                            { id: 'startButton', className: this.state.roomData.gameStatus, onClick: this.startGame },
+                            'Start Game'
                         )
                     )
                 ),
                 _react2.default.createElement(
                     'div',
                     { id: 'gameBoard' },
-                    'game board'
+                    this.state.roomData.words.map(function (row, index) {
+                        return _react2.default.createElement(
+                            'div',
+                            { className: 'row', key: index },
+                            row.map(function (word, index) {
+                                return _react2.default.createElement(
+                                    'div',
+                                    { className: 'box ' + word.status, key: index },
+                                    _react2.default.createElement(
+                                        'div',
+                                        { className: 'word' },
+                                        word.word
+                                    )
+                                );
+                            })
+                        );
+                    })
                 )
             );
         }

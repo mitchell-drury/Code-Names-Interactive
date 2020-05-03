@@ -90,7 +90,7 @@ ul{
     padding:0px;
 }
 
-#roomName{
+#roomName, #playersTitle, #requestsTitle, #cluesTitle{
     height: 20px;
 }
 
@@ -99,7 +99,14 @@ ul{
     border:1px solid black;
 }
 
+#dialogue{
+    display: inline-block;
+    width: 49%;
+}
+
 #chatMessages{
+    display: flex;
+    flex-flow: column-reverse;
     height: 60px;
     overflow:scroll;
 }
@@ -122,9 +129,22 @@ ul{
     width: 20%;
 }
 
+#clueInterface{
+    display:inline-block;
+    width: 49%;
+}
+
+#clues{
+    height:60px;
+}
+
 #players{
     width:24%;
     border:1px solid black;
+}
+
+#playersList{
+    height: 60px;
 }
 
 .redPlayer{
@@ -149,4 +169,54 @@ ul{
 .rightArrow:hover{
     cursor: pointer;
     color:blue;
+}
+
+#startButton{
+    height: 20px;
+}
+
+.waiting{
+    background-color: rgb(194, 194, 194);
+}
+
+.ready{
+    background-color: rgba(204, 0, 0, 0.329);
+    cursor: pointer;
+}
+.ready:hover{
+    background-color: rgba(204, 0, 0, 0.432);
+}
+
+.active{
+    cursor: pointer;
+}
+
+.row{
+    height: 20vh;
+    width: 100%;
+}
+
+.box{
+    display:inline-block;
+    height: 100%;
+    width: calc(20% - 2px);
+    border: 1px solid black;
+    background-color: #dccf9f;
+}
+
+.box:hover{
+    border: 1px solid white;
+    cursor: pointer;
+}
+
+.revealed .text{
+
+}
+
+.covered .text{
+
+}
+
+.hidden .text{
+
 }
