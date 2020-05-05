@@ -7246,7 +7246,8 @@ var RemoteGame = function (_Component) {
                 requests: {},
                 words: [[{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }]],
                 clues: [],
-                gameStatus: 'waiting'
+                gameStatus: 'waiting',
+                startingColor: null
             },
             chat: [],
             message: '',
@@ -7256,9 +7257,31 @@ var RemoteGame = function (_Component) {
             gameData: {}
         };
 
-        _clientRoutes.socket.on('room data', function (roomData) {
-            console.log('room data: ', roomData);
-            _this.setState({ roomData: roomData });
+        _clientRoutes.socket.on('room data', function (roomData, type) {
+            console.log('room data: ', roomData, ' type: ', type);
+            var copied = Object.assign({}, _this.state.roomData);
+            if (type === 'change color') {
+                copied.sockets = roomData.sockets;
+                copied.redSpymaster = roomData.redSpymaster;
+                copied.blueSpymaster = roomData.blueSpymaster;
+                copied.gameStatus = roomData.gameStatus;
+            } else if (type === 'change spymaster') {
+                copied.redSpymaster = roomData.redSpymaster;
+                copied.blueSpymaster = roomData.blueSpymaster;
+                copied.gameStatus = roomData.gameStatus;
+            } else if (type === 'cover box') {
+                console.log('cover box ', roomData);
+                var copiedRoomData = Object.assign({}, _this.state.roomData);
+                copiedRoomData.words[Math.floor(roomData / 5)][roomData % 5].status = 'covered';
+                _this.setState({ roomData: copiedRoomData });
+            } else if (type === 'end game') {
+                //TODO ---- set state
+                console.log('game ended');
+            } else {
+                //update everything with current data from server
+                copied = roomData;
+            }
+            _this.setState({ roomData: copied });
         });
 
         _clientRoutes.socket.on('new message', function (sender, message, color) {
@@ -7268,7 +7291,17 @@ var RemoteGame = function (_Component) {
 
         _clientRoutes.socket.on('start game', function () {
             console.log('start game');
-            //TODO - make start button available
+            //if you're the spymaster, set all to revealed at outset
+            if (_clientRoutes.socket.id === _this.state.roomData.blueSpymaster.socket || _clientRoutes.socket.id === _this.state.roomData.redSpymaster.socket) {
+                var copiedRoomData = Object.assign({}, _this.state.roomData);
+                for (var x = 0; x < 5; x++) {
+                    for (var y = 0; y < 5; y++) {
+                        copiedRoomData.words[x][y].status = 'revealed';
+                    }
+                }
+                _this.setState({ roomData: copiedRoomData });
+            }
+            //TODO - chnage start button to stop
         });
 
         _this.acceptRequest = _this.acceptRequest.bind(_this);
@@ -7281,6 +7314,7 @@ var RemoteGame = function (_Component) {
         _this.changeColor = _this.changeColor.bind(_this);
         _this.changeSpymaster = _this.changeSpymaster.bind(_this);
         _this.startGame = _this.startGame.bind(_this);
+        _this.boxClick = _this.boxClick.bind(_this);
         return _this;
     }
 
@@ -7294,6 +7328,7 @@ var RemoteGame = function (_Component) {
         value: function componentWillUnmount() {
             _clientRoutes.socket.off('new message');
             _clientRoutes.socket.off('room data');
+            _clientRoutes.socket.off('start game');
             _clientRoutes.socket.emit('left room', this.state.params.gameRoom);
         }
     }, {
@@ -7348,14 +7383,34 @@ var RemoteGame = function (_Component) {
     }, {
         key: 'startGame',
         value: function startGame() {
-            if (this.state.roomData.gameStatus === 'waiting') {
+            if (this.state.roomData.gameStatus === 'ready') {
                 _clientRoutes.socket.emit('start game', this.state.params.gameRoom);
+            } else if (this.state.roomData.gameStatus === 'active') {
+                if (confirm('Are you you want to end the game?')) {
+                    _clientRoutes.socket.emit('end game', this.state.params.gameRoom);
+                }
+            }
+        }
+    }, {
+        key: 'boxClick',
+        value: function boxClick(boxNumber, word) {
+            console.log(boxNumber);
+            if (_clientRoutes.socket.id === this.state.roomData.redSpymaster.socket || _clientRoutes.socket.id === this.state.roomData.blueSpymaster.socket) {
+                //the spymaster just toggling between covered and revealed
+                var copiedRoomData = Object.assign({}, this.state.roomData);
+
+                this.setState({ roomData: copiedRoomData });
+            } else if (window.confirm('Reveal ' + word + '?')) {
+                //you're a guesser actually revelaing the word
+                _clientRoutes.socket.emit('cover box', boxNumber, this.state.params.gameRoom);
             }
         }
     }, {
         key: 'render',
         value: function render() {
             var _this2 = this;
+
+            var startStopText = this.state.roomData.gameStatus === 'active' ? 'End' : 'Start';
 
             return _react2.default.createElement(
                 'div',
@@ -7498,13 +7553,13 @@ var RemoteGame = function (_Component) {
                                         return _react2.default.createElement(
                                             'div',
                                             { className: 'bluePlayer', key: index },
-                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeSpymaster, checked: isSpymaster, disabled: !isSpymaster && spymasterPresent }),
-                                            _this2.state.roomData.sockets[socketId].name,
                                             _react2.default.createElement(
                                                 'span',
                                                 { className: 'rightArrow', onClick: _this2.changeColor },
                                                 '\u2190'
-                                            )
+                                            ),
+                                            _this2.state.roomData.sockets[socketId].name,
+                                            _react2.default.createElement('input', { type: 'checkbox', onChange: _this2.changeSpymaster, checked: isSpymaster, disabled: !isSpymaster && spymasterPresent })
                                         );
                                     } else {
                                         if (socketId === _this2.state.roomData.blueSpymaster.socket) {
@@ -7528,26 +7583,28 @@ var RemoteGame = function (_Component) {
                         _react2.default.createElement(
                             'div',
                             { id: 'startButton', className: this.state.roomData.gameStatus, onClick: this.startGame },
-                            'Start Game'
+                            startStopText
                         )
                     )
                 ),
                 _react2.default.createElement(
                     'div',
                     { id: 'gameBoard' },
-                    this.state.roomData.words.map(function (row, index) {
+                    this.state.roomData.words.map(function (row, indexA) {
                         return _react2.default.createElement(
                             'div',
-                            { className: 'row', key: index },
+                            { className: 'row', key: indexA },
                             row.map(function (word, index) {
+                                var boxNumber = indexA * 5 + index;
                                 return _react2.default.createElement(
                                     'div',
-                                    { className: 'box ' + word.status, key: index },
+                                    { className: 'box ' + word.status, onClick: _this2.boxClick.bind(null, boxNumber, word.word), key: index },
                                     _react2.default.createElement(
                                         'div',
                                         { className: 'word' },
                                         word.word
-                                    )
+                                    ),
+                                    _react2.default.createElement('div', { className: 'background ' + word.color })
                                 );
                             })
                         );

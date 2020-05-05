@@ -21,6 +21,9 @@ body{
 .red{
     color:red;
 }
+.beige{
+    color: beige;
+}
 
 #app {
 
@@ -178,7 +181,6 @@ ul{
 .waiting{
     background-color: rgb(194, 194, 194);
 }
-
 .ready{
     background-color: rgba(204, 0, 0, 0.329);
     cursor: pointer;
@@ -186,9 +188,11 @@ ul{
 .ready:hover{
     background-color: rgba(204, 0, 0, 0.432);
 }
-
 .active{
     cursor: pointer;
+}
+.active:hover{
+    background-color: red;
 }
 
 .row{
@@ -197,6 +201,7 @@ ul{
 }
 
 .box{
+    position: relative;
     display:inline-block;
     height: 100%;
     width: calc(20% - 2px);
@@ -208,15 +213,51 @@ ul{
     border: 1px solid white;
     cursor: pointer;
 }
-
-.revealed .text{
-
+.box .beige{
+    background-image: url('/images/Beige Card.jpg');
+}
+.box .red{
+    background-image: url('/images/Red Card.jpg');
+}
+.box .blue{
+    background-image: url('/images/Blue Card.jpg');
+}
+.box .black{
+    background-image: url('/images/Black Card.jpg');
 }
 
-.covered .text{
+.word{
+    text-align: center;
+}
+.hidden .word{
 
 }
-
-.hidden .text{
-
+.covered .word{
+    z-index: 1;
 }
+.revealed .word{
+    z-index: 2;
+}
+
+.box .background{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 100%;
+    width: 100%;
+    background-position: center;
+    background-size: cover;
+}
+.hidden .background{
+    opacity: 0;
+}
+.covered .background{
+    z-index: 2;
+    opacity: 1;
+}
+.revealed .background{
+    z-index: 1;
+    opacity: .25;
+}
+
+

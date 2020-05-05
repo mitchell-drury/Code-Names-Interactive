@@ -51,7 +51,8 @@ export default class RemoteGame extends Component {
                     ]
                 ],
                 clues: [],
-                gameStatus: 'waiting'
+                gameStatus: 'waiting',
+                startingColor: null
             },
             chat: [],
             message: '',
@@ -61,9 +62,31 @@ export default class RemoteGame extends Component {
             gameData: {}
         }
 
-        socket.on('room data', (roomData) => {
-            console.log('room data: ', roomData);
-            this.setState({roomData: roomData});
+        socket.on('room data', (roomData, type) => {
+            console.log('room data: ', roomData, ' type: ', type);  
+            let copied = Object.assign({}, this.state.roomData); 
+            if(type === 'change color') {
+                copied.sockets = roomData.sockets;
+                copied.redSpymaster = roomData.redSpymaster;
+                copied.blueSpymaster = roomData.blueSpymaster;
+                copied.gameStatus = roomData.gameStatus;
+            }else if(type === 'change spymaster') {
+                copied.redSpymaster = roomData.redSpymaster;
+                copied.blueSpymaster = roomData.blueSpymaster;
+                copied.gameStatus = roomData.gameStatus;
+            }else if(type === 'cover box'){
+                console.log('cover box ', roomData);
+                let copiedRoomData = Object.assign({}, this.state.roomData);
+                copiedRoomData.words[Math.floor(roomData/5)][roomData%5].status = 'covered';
+                this.setState({roomData: copiedRoomData})
+            }else if (type === 'end game') {
+                //TODO ---- set state
+                console.log('game ended');
+            }else {
+                //update everything with current data from server
+                copied = roomData;
+            }
+            this.setState({roomData: copied});
         })
 
         socket.on('new message', (sender, message, color) => {
@@ -73,7 +96,17 @@ export default class RemoteGame extends Component {
 
         socket.on('start game', () => {
             console.log('start game');
-            //TODO - make start button available
+            //if you're the spymaster, set all to revealed at outset
+            if(socket.id === this.state.roomData.blueSpymaster.socket || socket.id === this.state.roomData.redSpymaster.socket) {
+                let copiedRoomData = Object.assign({}, this.state.roomData);
+                for(let x=0; x<5; x++) {
+                    for (let y=0; y<5; y++){
+                        copiedRoomData.words[x][y].status = 'revealed';
+                    }
+                }
+                this.setState({roomData: copiedRoomData});
+            }
+            //TODO - chnage start button to stop
         })
 
         this.acceptRequest = this.acceptRequest.bind(this);
@@ -86,6 +119,7 @@ export default class RemoteGame extends Component {
         this.changeColor = this.changeColor.bind(this);
         this.changeSpymaster = this.changeSpymaster.bind(this);
         this.startGame = this.startGame.bind(this);
+        this.boxClick = this.boxClick.bind(this);
     }
 
     componentDidMount() {
@@ -95,6 +129,7 @@ export default class RemoteGame extends Component {
     componentWillUnmount() {
         socket.off('new message');
         socket.off('room data');
+        socket.off('start game');
         socket.emit('left room', this.state.params.gameRoom);
     }
 
@@ -129,7 +164,7 @@ export default class RemoteGame extends Component {
         socket.emit('new clue', this.state.params.gameRoom, this.state.clue, this.state.number);
     }
 
-    changeColor(){
+    changeColor() {
         socket.emit('change color', this.state.params.gameRoom);
     }
 
@@ -139,12 +174,31 @@ export default class RemoteGame extends Component {
     }
 
     startGame() {
-        if (this.state.roomData.gameStatus === 'waiting') {
+        if(this.state.roomData.gameStatus === 'ready') {
             socket.emit('start game', this.state.params.gameRoom);
+        } else if(this.state.roomData.gameStatus === 'active') {
+            if(confirm('Are you you want to end the game?')) {
+                socket.emit('end game', this.state.params.gameRoom);
+            }
+        }
+    }
+
+    boxClick(boxNumber, word) {
+        console.log(boxNumber);
+        if(socket.id === this.state.roomData.redSpymaster.socket || socket.id === this.state.roomData.blueSpymaster.socket) {
+            //the spymaster just toggling between covered and revealed
+            let copiedRoomData = Object.assign({}, this.state.roomData);
+
+            this.setState({roomData: copiedRoomData});
+        }else if(window.confirm('Reveal ' + word + '?')) {
+            //you're a guesser actually revelaing the word
+            socket.emit('cover box', boxNumber, this.state.params.gameRoom);
         }
     }
 
     render() {
+        let startStopText = this.state.roomData.gameStatus === 'active' ? 'End' : 'Start';
+
         return (
             <div id='remoteGame'>
             <div id='topBar'>
@@ -221,7 +275,7 @@ export default class RemoteGame extends Component {
                             let spymasterPresent = this.state.roomData.blueSpymaster.socket;
                             
                             if (socketId === socket.id) {
-                                return <div className='bluePlayer' key={index}><input type='checkbox' onChange={this.changeSpymaster} checked={isSpymaster} disabled={!isSpymaster && spymasterPresent}></input>{this.state.roomData.sockets[socketId].name}<span className='rightArrow' onClick={this.changeColor}>&larr;</span></div>
+                                return <div className='bluePlayer' key={index}><span className='rightArrow' onClick={this.changeColor}>&larr;</span>{this.state.roomData.sockets[socketId].name}<input type='checkbox' onChange={this.changeSpymaster} checked={isSpymaster} disabled={!isSpymaster && spymasterPresent}></input></div>
                             } else {
                                 if (socketId === this.state.roomData.blueSpymaster.socket) {
                                     return <div className='bluePlayer' key={index}>
@@ -237,20 +291,22 @@ export default class RemoteGame extends Component {
                         )}
                         </div>
                     </div>
-                   <div id='startButton' className={this.state.roomData.gameStatus} onClick={this.startGame}>
-                   Start Game
-                   </div>
+                    <div id='startButton' className={this.state.roomData.gameStatus} onClick={this.startGame}>
+                    {startStopText}
+                    </div>
                 </div>
             </div>
             <div id='gameBoard'>
-                {this.state.roomData.words.map((row, index) => {
-                    return (<div className='row' key={index}>
+                {this.state.roomData.words.map((row, indexA) => {
+                    return <div className='row' key={indexA}>
                     {row.map((word, index) => {
-                        return <div className={'box ' + word.status} key={index}>
-                        <div className='word'>{word.word}</div>
+                        let boxNumber = indexA*5 + index;
+                        return <div className={'box ' + word.status} onClick={this.boxClick.bind(null, boxNumber, word.word)} key={index}>
+                            <div className='word'>{word.word}</div>
+                            <div className={'background ' + word.color}></div>
                         </div>
                     })}
-                    </div>)
+                    </div>
                 })}
             </div>
             </div>

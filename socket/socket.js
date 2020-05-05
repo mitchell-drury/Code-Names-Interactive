@@ -77,7 +77,8 @@ module.exports = io => {
                         ]
                     ],
                     clues: [],
-                    gameStatus: 'waiting'
+                    gameStatus: 'waiting',
+                    startingColor: null
                 }
 
                 //leave other room if previously in one
@@ -115,7 +116,7 @@ module.exports = io => {
             if(roomsData[roomToJoin].sockets[socket.id]){
                 //TODO - unjoin socket from all other rooms****
                 if(socketRooms[requestingSocket]) {
-                    console.log('unjoing from: ', socketRooms[requestingSocket], ' before joining: ', roomToJoin)
+                    console.log('unjoining from: ', socketRooms[requestingSocket], ' before joining: ', roomToJoin)
                     delete roomsData[socketRooms[requestingSocket]].sockets[socket.id];
                     checkForEmptyRoom(socketRooms[requestingSocket]);
                     io.sockets.sockets[requestingSocket].leave(socketRooms[requestingSocket]);
@@ -124,10 +125,11 @@ module.exports = io => {
                 io.sockets.sockets[requestingSocket].join(roomToJoin);
                 let color = name.length %2 === 0 ? 'blue' : 'red';   
                 delete roomsData[roomToJoin].requests[requestingSocket];
-                roomsData[roomToJoin].sockets[requestingSocket] = {id: requestingSocket, name: name, color: color, ready: false, spyMaster: false, inRoom: true};
+                roomsData[roomToJoin].sockets[requestingSocket] = {id: requestingSocket, name: name, color: color, ready: false, inRoom: true};
                 socketRooms[requestingSocket] = roomToJoin;
                 io.to(requestingSocket).emit('accepted'); 
             }
+            roomsData[roomToJoin].gameStatus = checkReadyStatus(roomToJoin);
         })
 
         socket.on('denied', (requestingSocket, roomToJoin) => {
@@ -150,6 +152,10 @@ module.exports = io => {
         })
 
         socket.on('change color', (room) => {
+            if(roomsData[room].gameStatus === 'active') {
+                console.log('cannot change color during active game');
+                return;
+            }
             console.log('change color: ', socket.id);
             if (roomsData[room].redSpymaster.socket === socket.id) {
                 roomsData[room].redSpymaster.socket = null;
@@ -158,10 +164,15 @@ module.exports = io => {
                 roomsData[room].blueSpymaster.socket = null;
             }
             roomsData[room].sockets[socket.id].color = roomsData[room].sockets[socket.id].color === 'blue' ? 'red' : 'blue';
-            io.in(room).emit('room data', roomsData[room]);
+            roomsData[room].gameStatus = checkReadyStatus(room);
+            io.in(room).emit('room data', roomsData[room], 'change color');
         })
 
         socket.on('change spymaster', (room, spymasterStatus) => {
+            if(roomsData[room].gameStatus === 'active') {
+                console.log('cannot change spymaster during active game');
+                return;
+            }
             console.log('spymaster changed');
             let color = roomsData[room].sockets[socket.id].color;
             if (spymasterStatus) {
@@ -178,7 +189,7 @@ module.exports = io => {
                 }
             }
             roomsData[room].gameStatus = checkReadyStatus(room);
-            io.in(room).emit('room data', roomsData[room]);
+            io.in(room).emit('room data', roomsData[room], 'change spymaster');
         })
 
         socket.on('left room', (room) => {
@@ -186,29 +197,75 @@ module.exports = io => {
             console.log(socket.id, ' left: ', room);
             if(roomsData[room] && roomsData[room].sockets[socket.id]){
                 roomsData[room].sockets[socket.id].inRoom = false;
-                io.in(room).emit('room data', roomsData[room]);
+                io.in(room).emit('room data', roomsData[room], 'left room');
             }
         })
 
         socket.on('start game', (room) => {
+            console.log('starting game');
             // pick starting color
+            let startingColor = pickRedOrBlue();
+            let secondColor = startingColor === 'blue' ? 'red' : 'blue';
 
             // place words
             let wordsAvailable = wordBank.slice();
-            for (x=0; x<25; x++) {
+            for(x=0; x<25; x++) {
                 wordsAvailableIndex = Math.floor(Math.random()*wordsAvailable.length);
                 roomsData[room].words[Math.floor(x/5)][x%5].word = wordsAvailable[wordsAvailableIndex];
                 wordsAvailable.splice(wordsAvailableIndex, 1);
             }
             //set 9 starting color
+            let gridSpaces = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24];
+            let gridIndex;
+            for(x=0; x<9; x++) {
+                gridIndex = Math.floor(Math.random()*gridSpaces.length);
+                gridSpace = gridSpaces[gridIndex];
+                roomsData[room].words[Math.floor(gridSpace/5)][gridSpace%5].color = startingColor;
+                gridSpaces.splice(gridIndex, 1);
+            }
 
             //set 8 second color
+            for(x=0; x<8; x++) {
+                gridIndex = Math.floor(Math.random()*gridSpaces.length);
+                gridSpace = gridSpaces[gridIndex];
+                roomsData[room].words[Math.floor(gridSpace/5)][gridSpace%5].color = secondColor;
+                gridSpaces.splice(gridIndex, 1);
+            }
+            //set 1 black spot
+            gridIndex = Math.floor(Math.random()*gridSpaces.length);
+            gridSpace = gridSpaces[gridIndex];
+            roomsData[room].words[Math.floor(gridSpace/5)][gridSpace%5].color = 'black';
+            gridSpaces.splice(gridIndex, 1);
+            
+            //set 7 civilians
+            for(x=0; x<7; x++) {
+                gridIndex = Math.floor(Math.random()*gridSpaces.length);
+                gridSpace = gridSpaces[gridIndex];
+                roomsData[room].words[Math.floor(gridSpace/5)][gridSpace%5].color = 'beige';
+                gridSpaces.splice(gridIndex, 1);
+            }
+
+            //set game status
+            roomsData[room].gameStatus = 'active';
+            roomsData[room].startingColor = startingColor;
 
             io.in(room).emit('room data', roomsData[room]);
+            io.in(room).emit('start game');
+        })
+
+        socket.on('cover box', (boxNumber, room) => {
+            console.log('cover box: ', boxNumber);
+            roomsData[room].words[Math.floor(boxNumber/5)][boxNumber%5].status = 'covered';
+            io.in(room).emit('room data', boxNumber, 'cover box');
         })
 
         socket.on('end game', room => {
-
+            // set game state to 'waiting', reveal grid, reset spymasters
+            roomsData[room].redSpymaster = null;
+            roomsData[room].blueSpymaster = null;
+            roomsData[room].gameStatus = 'waiting';
+            io.in(room).emit('room data', roomsData[room], 'end game');
+            io.in(room).emit('new message', '', roomsData[room].sockets[socket.id].userName + ' ended the game', 'beige');
         })
 
         socket.on('get room data', (room) => {
@@ -232,7 +289,28 @@ module.exports = io => {
         }
 
         function checkReadyStatus(room) {
-            return (roomsData[room].redSpymaster.socket && roomsData[room].blueSpymaster.socket) ? 'ready' : 'waiting';
+            let redPlayers = 0;
+            let bluePlayers = 0;
+            Object.keys(roomsData[room].sockets).forEach(socket => {
+                if(roomsData[room].sockets[socket].color === 'blue') {
+                    bluePlayers += 1;
+                }else {
+                    redPlayers += 1;
+                }
+            })
+
+            if(redPlayers){
+                if(!roomsData[room].redSpymaster.socket){
+                    return 'waiting';
+                }
+            }
+            if(bluePlayers){
+                if(!roomsData[room].blueSpymaster.socket){
+                    return 'waiting';
+                }
+            }
+
+            return 'ready';
         }
 
         function pickRedOrBlue(){
