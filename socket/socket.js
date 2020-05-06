@@ -77,8 +77,11 @@ module.exports = io => {
                         ]
                     ],
                     clues: [],
+                    clueSubmitted: null,
+                    guessesRemaing: 0,
                     gameStatus: 'waiting',
-                    startingColor: null
+                    startingColor: null,
+                    turn: null
                 }
 
                 //leave other room if previously in one
@@ -93,13 +96,14 @@ module.exports = io => {
                 socket.join(newRoomName);
       
                 io.to(`${socket.id}`).emit('new room created', newRoomName);
-                io.in(newRoomName).emit('room data', roomsData[newRoomName]);
             }
         })
 
         socket.on('request to join', (roomToJoin, name) => {
             console.log('socket requesting to join');
-            if(roomsData[roomToJoin]) {
+            if(roomsData[roomToJoin].gameStatus === 'active') {
+                io.to(`${socket.id}`).emit('game in progress', roomToJoin);
+            }else if(roomsData[roomToJoin]) {
                 roomsData[roomToJoin].requests[socket.id] = {socket: socket.id, name: name}
                 io.in(roomToJoin).emit('room data', roomsData[roomToJoin]);
             } else {
@@ -148,7 +152,18 @@ module.exports = io => {
         })
 
         socket.on('new clue', (room, clue, number) => {
-            console.log('new clue for : ', room, ' ', clue, ' ', number)
+            console.log(roomsData, 'new clue for: ', room, ' ', clue, ' ', number);
+            if(roomsData[room].clueSubmitted) {
+                return;
+            }
+            roomsData[room].clues.push({'clueWord': clue, 'number': number, 'color': roomsData[room].sockets[socket.id].color});
+            if(number === 'U' || number === 'u' || number === '0'){
+                roomsData[room].guessesRemaing = 9;
+            }else {
+                roomsData[room].guessesRemaing = parseInt(number) + 1;
+            }
+            roomsData[room].clueSubmitted = true;
+            io.in(room).emit('room data', {clues: roomsData[room].clues, guessesRemaing: number, clueSubmitted: true}, 'clues');
         })
 
         socket.on('change color', (room) => {
@@ -198,6 +213,16 @@ module.exports = io => {
             if(roomsData[room] && roomsData[room].sockets[socket.id]){
                 roomsData[room].sockets[socket.id].inRoom = false;
                 io.in(room).emit('room data', roomsData[room], 'left room');
+                io.in(room).emit('new message', '', roomsData[room].sockets[socket.id].name + ' left the room', 'beige');
+            }
+        })
+
+        socket.on('entered room', (room) => {
+            console.log('room entered: ', room);
+            if(roomsData[room]) {
+                if(roomsData[room].sockets[socket.id]) {
+                    io.in(room).emit('new message', '', roomsData[room].sockets[socket.id].name + ' entered the room');
+                }
             }
         })
 
@@ -205,6 +230,9 @@ module.exports = io => {
             console.log('starting game');
             // pick starting color
             let startingColor = pickRedOrBlue();
+            roomsData[room].turn = startingColor;
+            roomsData[room].clues = [];
+            roomsData[room].clueSubmitted = null;
             let secondColor = startingColor === 'blue' ? 'red' : 'blue';
 
             // place words
@@ -214,6 +242,15 @@ module.exports = io => {
                 roomsData[room].words[Math.floor(x/5)][x%5].word = wordsAvailable[wordsAvailableIndex];
                 wordsAvailable.splice(wordsAvailableIndex, 1);
             }
+
+            //set game status, starting color, words
+            roomsData[room].gameStatus = 'active';
+            roomsData[room].startingColor = startingColor;
+            roomsData[room].turn = startingColor;
+            
+            //send just the words without any color info to everyone
+            io.in(room).emit('room data', roomsData[room]);
+
             //set 9 starting color
             let gridSpaces = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24];
             let gridIndex;
@@ -245,27 +282,37 @@ module.exports = io => {
                 gridSpaces.splice(gridIndex, 1);
             }
 
-            //set game status
-            roomsData[room].gameStatus = 'active';
-            roomsData[room].startingColor = startingColor;
+            //send words with color info to spy masters
+            io.to(roomsData[room].blueSpymaster.socket).emit('room data', roomsData[room]);
+            io.to(roomsData[room].redSpymaster.socket).emit('room data', roomsData[room]);
 
-            io.in(room).emit('room data', roomsData[room]);
-            io.in(room).emit('start game');
+            io.in(room).emit('new message', '', 'Game started, awaiting clue from ' + startingColor + ' spymaster', 'beige')
         })
 
         socket.on('cover box', (boxNumber, room) => {
             console.log('cover box: ', boxNumber);
+            if (roomsData[room].guessesRemaing < 1) {
+                // do more checking
+                return;
+            }
             roomsData[room].words[Math.floor(boxNumber/5)][boxNumber%5].status = 'covered';
-            io.in(room).emit('room data', boxNumber, 'cover box');
+            roomsData[room].guessesRemaing = roomsData[room].guessesRemaing - 1;
+            let boxInfo = {boxNumber: boxNumber, color: roomsData[room].words[Math.floor(boxNumber/5)][boxNumber%5].color, guessesRemaing: roomsData[room].guessesRemaing};
+            io.in(room).emit('room data', boxInfo, 'cover box');
         })
 
-        socket.on('end game', room => {
+        socket.on('end game', (room) => {
             // set game state to 'waiting', reveal grid, reset spymasters
-            roomsData[room].redSpymaster = null;
-            roomsData[room].blueSpymaster = null;
+            roomsData[room].redSpymaster.socket = null;
+            roomsData[room].blueSpymaster.socket = null;
             roomsData[room].gameStatus = 'waiting';
+            for(let x=0; x<5; x++) {
+                for (let y=0; y<5; y++){
+                    roomsData[room].words[x][y].status = 'revealed';
+                }
+            }
             io.in(room).emit('room data', roomsData[room], 'end game');
-            io.in(room).emit('new message', '', roomsData[room].sockets[socket.id].userName + ' ended the game', 'beige');
+            io.in(room).emit('new message', '', roomsData[room].sockets[socket.id].name + ' ended the game', 'beige');
         })
 
         socket.on('get room data', (room) => {
@@ -274,9 +321,10 @@ module.exports = io => {
                     {sockets: {},
                     requests: {},
                     words: {},
-                    gameStatus: 'not welcome'
-                    });
+                    gameStatus: null
+                });
             } else if(roomsData[room].sockets[socket.id]){
+                //TODO -- if not spymaster dont send word color info
                 roomsData[room].sockets[socket.id].inRoom = true;
                 io.in(room).emit('room data', roomsData[room]);
             }

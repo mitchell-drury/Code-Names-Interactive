@@ -22,7 +22,7 @@ body{
     color:red;
 }
 .beige{
-    color: beige;
+    color: #806e54;
 }
 
 #app {
@@ -138,7 +138,10 @@ ul{
 }
 
 #clues{
-    height:60px;
+    display:flex;
+    flex-flow: column-reverse;
+    height: 60px;
+    overflow:scroll;
 }
 
 #players{

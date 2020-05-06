@@ -51,12 +51,16 @@ export default class RemoteGame extends Component {
                     ]
                 ],
                 clues: [],
+                clueSubmitted: null,
+                guessesRemaing: 0,
                 gameStatus: 'waiting',
-                startingColor: null
+                startingColor: null,
+                turn: null
             },
             chat: [],
             message: '',
             clue: '',
+            gameStatus: null,
             number: '',
             params: QueryString.parse(location.search),
             gameData: {}
@@ -74,13 +78,17 @@ export default class RemoteGame extends Component {
                 copied.redSpymaster = roomData.redSpymaster;
                 copied.blueSpymaster = roomData.blueSpymaster;
                 copied.gameStatus = roomData.gameStatus;
+            }else if (type === 'clues') {
+                console.log('clues: ', clues);
+                copied.clues = roomData.clues;
+                copied.guessesRemaing = roomData.guessesRemaing;
+                copied.clueSubmitted = roomData.clueSubmitted;
             }else if(type === 'cover box'){
                 console.log('cover box ', roomData);
-                let copiedRoomData = Object.assign({}, this.state.roomData);
-                copiedRoomData.words[Math.floor(roomData/5)][roomData%5].status = 'covered';
-                this.setState({roomData: copiedRoomData})
+                copied.words[Math.floor(roomData.boxNumber/5)][roomData.boxNumber%5].status = 'covered';
+                copied.words[Math.floor(roomData.boxNumber/5)][roomData.boxNumber%5].color = roomData.color;
             }else if (type === 'end game') {
-                //TODO ---- set state
+                copied = roomData;
                 console.log('game ended');
             }else {
                 //update everything with current data from server
@@ -106,7 +114,6 @@ export default class RemoteGame extends Component {
                 }
                 this.setState({roomData: copiedRoomData});
             }
-            //TODO - chnage start button to stop
         })
 
         this.acceptRequest = this.acceptRequest.bind(this);
@@ -123,6 +130,7 @@ export default class RemoteGame extends Component {
     }
 
     componentDidMount() {
+        socket.emit('entered room', this.state.params.gameRoom);
         socket.emit('get room data', this.state.params.gameRoom);
     }
 
@@ -161,7 +169,16 @@ export default class RemoteGame extends Component {
 
     submitClue(event) {
         event.preventDefault();
+        if (this.state.roomData.clueSubmitted === true) {
+            return;
+        }
+        if (this.state.number){
+            //do some checking here
+        }
         socket.emit('new clue', this.state.params.gameRoom, this.state.clue, this.state.number);
+        this.setState({clue: '', number: ''});
+        document.getElementById('clue').value = '';
+        document.getElementById('number').value = '';
     }
 
     changeColor() {
@@ -197,7 +214,12 @@ export default class RemoteGame extends Component {
     }
 
     render() {
+        if (this.state.roomData.gameStatus === null) {
+            return <div> Not welcomd here </div>;
+        }
         let startStopText = this.state.roomData.gameStatus === 'active' ? 'End' : 'Start';
+
+        let spymaster = this.state.roomData.redSpymaster.socket === socket.id || this.state.roomData.blueSpymaster.socket === socket.id;
 
         return (
             <div id='remoteGame'>
@@ -219,27 +241,27 @@ export default class RemoteGame extends Component {
                         </div>
                         <div id='chatMessages'>
                         {this.state.chat.map((message, index) => {
-                            return <div className={'chatMessage ' + message.color} key={index}>{message.sender}: {message.message}</div>
+                            return <div className={'chatMessage'} key={index}><span className={message.color}>{message.sender}: </span> {message.message}</div>
                         })}
                         </div>
-                        <form id='chatForm' onSubmit={this.submitChat}>
+                        <form id='chatForm' onSubmit={this.submitChat} autoComplete='off'>
                             <input type='text' id='chatInput' className='inline' onChange={this.changeMessage}></input>
-                            <input type='submit' id='chatSubmit' className='inline'></input>
+                            <input type='submit' id='chatSubmit' className='inline' value='Enter'></input>
                         </form>
                         </div>
                     <div id='clueInterface'>
-                        <div id='cluesTitle'>Clues</div>
+                        <div id='cluesTitle'><span className={this.state.roomData.turn}>{this.state.roomData.turn + ' turn'}</span> Guesses: {this.state.roomData.guessesRemaing}</div>
                         <div id='clues'>
-                            {this.state.roomData.clues.map(clue => {
-                                return <div className='clue'>
-
+                            {this.state.roomData.clues.map((clue, index) => {
+                                return <div className={'clue ' + clue.color} key={index}>
+                                    {clue.clueWord + ' : ' + clue.number} 
                                 </div>
                             })}
                         </div>
                         <form id='newClue' onSubmit={this.submitClue}>
-                            <input type='text' placeholder='clue word' onChange={this.changeClue}></input>
-                            <input type='text' placeholder='number' onChange={this.changeNumber}></input>
-                            <input type='submit'></input>
+                            <input id='clue' type='text' placeholder='Clue Word' onChange={this.changeClue} disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
+                            <input id='number' type='text' maxLength='1' placeholder='0-9 or U' onChange={this.changeNumber} disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
+                            <input type='submit' value='Enter Clue' disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
                         </form>
                     </div>
                 </div>

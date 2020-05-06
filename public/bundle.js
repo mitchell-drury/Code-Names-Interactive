@@ -7246,12 +7246,16 @@ var RemoteGame = function (_Component) {
                 requests: {},
                 words: [[{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }], [{ word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }, { word: '-', status: 'hidden', color: 'beige' }]],
                 clues: [],
+                clueSubmitted: null,
+                guessesRemaing: 0,
                 gameStatus: 'waiting',
-                startingColor: null
+                startingColor: null,
+                turn: null
             },
             chat: [],
             message: '',
             clue: '',
+            gameStatus: null,
             number: '',
             params: QueryString.parse(location.search),
             gameData: {}
@@ -7269,13 +7273,17 @@ var RemoteGame = function (_Component) {
                 copied.redSpymaster = roomData.redSpymaster;
                 copied.blueSpymaster = roomData.blueSpymaster;
                 copied.gameStatus = roomData.gameStatus;
+            } else if (type === 'clues') {
+                console.log('clues: ', clues);
+                copied.clues = roomData.clues;
+                copied.guessesRemaing = roomData.guessesRemaing;
+                copied.clueSubmitted = roomData.clueSubmitted;
             } else if (type === 'cover box') {
                 console.log('cover box ', roomData);
-                var copiedRoomData = Object.assign({}, _this.state.roomData);
-                copiedRoomData.words[Math.floor(roomData / 5)][roomData % 5].status = 'covered';
-                _this.setState({ roomData: copiedRoomData });
+                copied.words[Math.floor(roomData.boxNumber / 5)][roomData.boxNumber % 5].status = 'covered';
+                copied.words[Math.floor(roomData.boxNumber / 5)][roomData.boxNumber % 5].color = roomData.color;
             } else if (type === 'end game') {
-                //TODO ---- set state
+                copied = roomData;
                 console.log('game ended');
             } else {
                 //update everything with current data from server
@@ -7301,7 +7309,6 @@ var RemoteGame = function (_Component) {
                 }
                 _this.setState({ roomData: copiedRoomData });
             }
-            //TODO - chnage start button to stop
         });
 
         _this.acceptRequest = _this.acceptRequest.bind(_this);
@@ -7321,6 +7328,7 @@ var RemoteGame = function (_Component) {
     _createClass(RemoteGame, [{
         key: 'componentDidMount',
         value: function componentDidMount() {
+            _clientRoutes.socket.emit('entered room', this.state.params.gameRoom);
             _clientRoutes.socket.emit('get room data', this.state.params.gameRoom);
         }
     }, {
@@ -7367,7 +7375,16 @@ var RemoteGame = function (_Component) {
         key: 'submitClue',
         value: function submitClue(event) {
             event.preventDefault();
+            if (this.state.roomData.clueSubmitted === true) {
+                return;
+            }
+            if (this.state.number) {
+                //do some checking here
+            }
             _clientRoutes.socket.emit('new clue', this.state.params.gameRoom, this.state.clue, this.state.number);
+            this.setState({ clue: '', number: '' });
+            document.getElementById('clue').value = '';
+            document.getElementById('number').value = '';
         }
     }, {
         key: 'changeColor',
@@ -7410,7 +7427,16 @@ var RemoteGame = function (_Component) {
         value: function render() {
             var _this2 = this;
 
+            if (this.state.roomData.gameStatus === null) {
+                return _react2.default.createElement(
+                    'div',
+                    null,
+                    ' Not welcomd here '
+                );
+            }
             var startStopText = this.state.roomData.gameStatus === 'active' ? 'End' : 'Start';
+
+            var spymaster = this.state.roomData.redSpymaster.socket === _clientRoutes.socket.id || this.state.roomData.blueSpymaster.socket === _clientRoutes.socket.id;
 
             return _react2.default.createElement(
                 'div',
@@ -7452,18 +7478,23 @@ var RemoteGame = function (_Component) {
                                 this.state.chat.map(function (message, index) {
                                     return _react2.default.createElement(
                                         'div',
-                                        { className: 'chatMessage ' + message.color, key: index },
-                                        message.sender,
-                                        ': ',
+                                        { className: 'chatMessage', key: index },
+                                        _react2.default.createElement(
+                                            'span',
+                                            { className: message.color },
+                                            message.sender,
+                                            ': '
+                                        ),
+                                        ' ',
                                         message.message
                                     );
                                 })
                             ),
                             _react2.default.createElement(
                                 'form',
-                                { id: 'chatForm', onSubmit: this.submitChat },
+                                { id: 'chatForm', onSubmit: this.submitChat, autoComplete: 'off' },
                                 _react2.default.createElement('input', { type: 'text', id: 'chatInput', className: 'inline', onChange: this.changeMessage }),
-                                _react2.default.createElement('input', { type: 'submit', id: 'chatSubmit', className: 'inline' })
+                                _react2.default.createElement('input', { type: 'submit', id: 'chatSubmit', className: 'inline', value: 'Enter' })
                             )
                         ),
                         _react2.default.createElement(
@@ -7472,21 +7503,31 @@ var RemoteGame = function (_Component) {
                             _react2.default.createElement(
                                 'div',
                                 { id: 'cluesTitle' },
-                                'Clues'
+                                _react2.default.createElement(
+                                    'span',
+                                    { className: this.state.roomData.turn },
+                                    this.state.roomData.turn + ' turn'
+                                ),
+                                ' Guesses: ',
+                                this.state.roomData.guessesRemaing
                             ),
                             _react2.default.createElement(
                                 'div',
                                 { id: 'clues' },
-                                this.state.roomData.clues.map(function (clue) {
-                                    return _react2.default.createElement('div', { className: 'clue' });
+                                this.state.roomData.clues.map(function (clue, index) {
+                                    return _react2.default.createElement(
+                                        'div',
+                                        { className: 'clue ' + clue.color, key: index },
+                                        clue.clueWord + ' : ' + clue.number
+                                    );
                                 })
                             ),
                             _react2.default.createElement(
                                 'form',
                                 { id: 'newClue', onSubmit: this.submitClue },
-                                _react2.default.createElement('input', { type: 'text', placeholder: 'clue word', onChange: this.changeClue }),
-                                _react2.default.createElement('input', { type: 'text', placeholder: 'number', onChange: this.changeNumber }),
-                                _react2.default.createElement('input', { type: 'submit' })
+                                _react2.default.createElement('input', { id: 'clue', type: 'text', placeholder: 'Clue Word', onChange: this.changeClue, disabled: !spymaster || this.state.roomData.turn != this.state.roomData.sockets[_clientRoutes.socket.id].color || this.state.roomData.clueSubmitted }),
+                                _react2.default.createElement('input', { id: 'number', type: 'text', maxLength: '1', placeholder: '0-9 or U', onChange: this.changeNumber, disabled: !spymaster || this.state.roomData.turn != this.state.roomData.sockets[_clientRoutes.socket.id].color || this.state.roomData.clueSubmitted }),
+                                _react2.default.createElement('input', { type: 'submit', value: 'Enter Clue', disabled: !spymaster || this.state.roomData.turn != this.state.roomData.sockets[_clientRoutes.socket.id].color || this.state.roomData.clueSubmitted })
                             )
                         )
                     ),
