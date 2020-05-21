@@ -50,9 +50,16 @@ export default class RemoteGame extends Component {
                         {word: '-', status: 'hidden', color: 'beige'}
                     ]
                 ],
+                colorCode: [
+                    ['beige', 'beige', 'beige', 'beige', 'beige'],
+                    ['beige', 'beige', 'beige', 'beige', 'beige'],
+                    ['beige', 'beige', 'beige', 'beige', 'beige'],
+                    ['beige', 'beige', 'beige', 'beige', 'beige'],
+                    ['beige', 'beige', 'beige', 'beige', 'beige']
+                ],
                 clues: [],
                 clueSubmitted: null,
-                guessesRemaing: 0,
+                guessesRemaining: 0,
                 gameStatus: 'waiting',
                 startingColor: null,
                 turn: null
@@ -78,18 +85,40 @@ export default class RemoteGame extends Component {
                 copied.redSpymaster = roomData.redSpymaster;
                 copied.blueSpymaster = roomData.blueSpymaster;
                 copied.gameStatus = roomData.gameStatus;
+            }else if (type === 'requests update'){
+                copied.requests = roomData.requests; 
+                copied.players = roomData.players;  
+            }else if (type === 'players update') {
+                console.log('players');
+                copied.sockets = roomData;   
             }else if (type === 'clues') {
                 console.log('clues: ', clues);
                 copied.clues = roomData.clues;
-                copied.guessesRemaing = roomData.guessesRemaing;
+                copied.guessesRemaining = roomData.guessesRemaining;
                 copied.clueSubmitted = roomData.clueSubmitted;
             }else if(type === 'cover box'){
                 console.log('cover box ', roomData);
                 copied.words[Math.floor(roomData.boxNumber/5)][roomData.boxNumber%5].status = 'covered';
-                copied.words[Math.floor(roomData.boxNumber/5)][roomData.boxNumber%5].color = roomData.color;
+                copied.colorCode[Math.floor(roomData.boxNumber/5)][roomData.boxNumber%5] = roomData.color;
+                copied.turn = roomData.turn;
+                copied.guessesRemaining = roomData.guessesRemaining;
+                copied.clueSubmitted = roomData.clueSubmitted;
+            }else if (type === 'end turn') {
+                copied.turn = roomData.turn;
+                copied.guessesRemaining = roomData.guessesRemaining;
+                copied.clueSubmitted = roomData.clueSubmitted;
             }else if (type === 'end game') {
                 copied = roomData;
                 console.log('game ended');
+            }else if (type === 'start game'){
+                if(socket.id === this.state.roomData.blueSpymaster.socket || socket.id === this.state.roomData.redSpymaster.socket){
+                    for(let x=0; x<5; x++) {
+                        for (let y=0; y<5; y++){
+                            copied.words[x][y].status = 'revealed';
+                        }
+                    }
+                }
+                copied.colorCode = roomData.colorCode;
             }else {
                 //update everything with current data from server
                 copied = roomData;
@@ -100,20 +129,6 @@ export default class RemoteGame extends Component {
         socket.on('new message', (sender, message, color) => {
             let newChat = [{sender: sender, message: message, color: color}].concat(this.state.chat)
             this.setState({chat: newChat});
-        })
-
-        socket.on('start game', () => {
-            console.log('start game');
-            //if you're the spymaster, set all to revealed at outset
-            if(socket.id === this.state.roomData.blueSpymaster.socket || socket.id === this.state.roomData.redSpymaster.socket) {
-                let copiedRoomData = Object.assign({}, this.state.roomData);
-                for(let x=0; x<5; x++) {
-                    for (let y=0; y<5; y++){
-                        copiedRoomData.words[x][y].status = 'revealed';
-                    }
-                }
-                this.setState({roomData: copiedRoomData});
-            }
         })
 
         this.acceptRequest = this.acceptRequest.bind(this);
@@ -127,6 +142,7 @@ export default class RemoteGame extends Component {
         this.changeSpymaster = this.changeSpymaster.bind(this);
         this.startGame = this.startGame.bind(this);
         this.boxClick = this.boxClick.bind(this);
+        this.endTurn = this.endTurn.bind(this);
     }
 
     componentDidMount() {
@@ -202,14 +218,30 @@ export default class RemoteGame extends Component {
 
     boxClick(boxNumber, word) {
         console.log(boxNumber);
-        if(socket.id === this.state.roomData.redSpymaster.socket || socket.id === this.state.roomData.blueSpymaster.socket) {
-            //the spymaster just toggling between covered and revealed
-            let copiedRoomData = Object.assign({}, this.state.roomData);
+        if(this.state.roomData.words[Math.floor(boxNumber/5)][boxNumber%5].status === 'covered'){
+            //toggling covered or revealed
+            let copied = Object.assign({}, this.state.roomData);
+            copied.words[Math.floor(boxNumber/5)][boxNumber%5].status = 'revealed';
+            this.setState({roomData: copied});
+        }else if(this.state.roomData.words[Math.floor(boxNumber/5)][boxNumber%5].status === 'revealed') {
+            //toggling covered or revealed
+            let copied = Object.assign({}, this.state.roomData);
+            copied.words[Math.floor(boxNumber/5)][boxNumber%5].status = 'covered';
+            this.setState({roomData: copied});
+        }else if(this.state.roomData.sockets[socket.id].color === this.state.roomData.turn && (this.state.roomData.redSpymaster.socket != socket.id && this.state.roomData.blueSpymaster.socket != socket.id)) {
+            //it's your turn and a clue has been submitted and you're not a spymaster
+            if(window.confirm('Reveal ' + word + '?')) {
+                //you're a guesser actually revealing the word
+                socket.emit('cover box', boxNumber, this.state.params.gameRoom);
+            }
+        }
+    }
 
-            this.setState({roomData: copiedRoomData});
-        }else if(window.confirm('Reveal ' + word + '?')) {
-            //you're a guesser actually revelaing the word
-            socket.emit('cover box', boxNumber, this.state.params.gameRoom);
+    endTurn() {
+        if(this.state.roomData.sockets[socket.id].color != this.state.roomData.turn){
+            return;
+        } else if(window.confirm('End ' + this.state.roomData.turn + '?')){
+            socket.emit('end turn', this.state.params.gameRoom);
         }
     }
 
@@ -250,7 +282,7 @@ export default class RemoteGame extends Component {
                         </form>
                         </div>
                     <div id='clueInterface'>
-                        <div id='cluesTitle'><span className={this.state.roomData.turn}>{this.state.roomData.turn + ' turn'}</span> Guesses: {this.state.roomData.guessesRemaing}</div>
+                        <div id='cluesTitle'><span className={this.state.roomData.turn}>{this.state.roomData.turn + ' turn'}</span> Guesses: {this.state.roomData.guessesRemaining || '(awaiting clue)'}</div>
                         <div id='clues'>
                             {this.state.roomData.clues.map((clue, index) => {
                                 return <div className={'clue ' + clue.color} key={index}>
@@ -258,9 +290,12 @@ export default class RemoteGame extends Component {
                                 </div>
                             })}
                         </div>
+                        <div id='endTurnButton' onClick={this.endTurn}>
+                            End Turn
+                        </div>
                         <form id='newClue' onSubmit={this.submitClue}>
-                            <input id='clue' type='text' placeholder='Clue Word' onChange={this.changeClue} disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
-                            <input id='number' type='text' maxLength='1' placeholder='0-9 or U' onChange={this.changeNumber} disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
+                            <input id='clue' type='text' placeholder='Clue Word' autoComplete='off' onChange={this.changeClue} disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
+                            <input id='number' type='text' maxLength='1' placeholder='0-9 or U' autoComplete='off' onChange={this.changeNumber} disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
                             <input type='submit' value='Enter Clue' disabled={!spymaster || this.state.roomData.turn != this.state.roomData.sockets[socket.id].color || this.state.roomData.clueSubmitted}></input>
                         </form>
                     </div>
@@ -325,7 +360,7 @@ export default class RemoteGame extends Component {
                         let boxNumber = indexA*5 + index;
                         return <div className={'box ' + word.status} onClick={this.boxClick.bind(null, boxNumber, word.word)} key={index}>
                             <div className='word'>{word.word}</div>
-                            <div className={'background ' + word.color}></div>
+                            <div className={'background ' + this.state.roomData.colorCode[indexA][index]}></div>
                         </div>
                     })}
                     </div>

@@ -61,9 +61,9 @@ export default class createRemoteGame extends Component {
             <div id='createGame' className='homeScreenOption'>
                 <form onSubmit={this.handleSubmit}>
                     Create Game
-                    <input id='newRoomName' className='homeInput' type='text' onChange={this.handleChange}></input>
-                    <input id='userName' className='homeInput' type='text' onChange={this.userNameChange}></input>
-                    <input type='submit'></input>
+                    <input id='newRoomName' className='homeInput' type='text' onChange={this.handleChange} autoComplete='off'></input>
+                    <input id='userName' className='homeInput' type='text' onChange={this.userNameChange} autoComplete='off'></input>
+                    <input type='submit' value='Create Game'></input>
                     <div id='createGameMessage'>{this.state.createGameMessage}</div>
                 </form>
             </div>

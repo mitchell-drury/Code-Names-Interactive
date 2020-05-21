@@ -76,7 +76,7 @@ body{
 
 #topBar{
     display:flex;
-    height:100px;
+    height:150px;
     border: 1px solid black;
     text-align:center;
 }
@@ -100,17 +100,19 @@ ul{
 #chat{
     width:49%;
     border:1px solid black;
+    vertical-align: top;
 }
 
 #dialogue{
     display: inline-block;
     width: 49%;
+    vertical-align: top;
 }
 
 #chatMessages{
     display: flex;
     flex-flow: column-reverse;
-    height: 60px;
+    height: 109px;
     overflow:scroll;
 }
 
@@ -140,8 +142,16 @@ ul{
 #clues{
     display:flex;
     flex-flow: column-reverse;
-    height: 60px;
+    height: 70px;
     overflow:scroll;
+}
+#endTurnButton{
+
+}
+
+#endTurnButton:hover{
+    cursor:pointer;
+    opacity:1;
 }
 
 #players{
@@ -150,7 +160,7 @@ ul{
 }
 
 #playersList{
-    height: 60px;
+    height: 109px;
 }
 
 .redPlayer{

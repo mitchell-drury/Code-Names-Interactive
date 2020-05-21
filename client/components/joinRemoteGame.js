@@ -29,12 +29,17 @@ export default class joinRemoteGame extends Component {
         socket.on('room does not exist', () => {
             this.setState({joinRoomMessage: 'room does not exist', waitingForResponse: false});
         })
+
+        socket.on('game in progress', () => {
+            this.setState({joinRoomMessage: 'game is in progress', waitingForResponse: false});
+        })
     }
 
     componentWillUnmount() {
         socket.off('accepted');
         socket.off('denied');
         socket.off('room does not exist');
+        socket.off('game in progress');
     }
 
     handleRoomChange(event) {
@@ -80,9 +85,9 @@ export default class joinRemoteGame extends Component {
             <div id='joinRoom' className='homeScreenOption'>
                 Join a Game
                 <form onSubmit={this.handleSubmit} >
-                    <input id='roomToJoin' className='homeInput' type='text' onChange={this.handleRoomChange}></input>
-                    <input id='name' className='homeInput' type='text' onChange={this.handleNameChange}></input>
-                    <input type='submit'></input>
+                    <input id='roomToJoin' className='homeInput' type='text' onChange={this.handleRoomChange} autoComplete='off'></input>
+                    <input id='name' className='homeInput' type='text' onChange={this.handleNameChange} autoComplete='off'></input>
+                    <input type='submit' value='Join Game'></input>
                     <div id='joinRoomMessage'>{this.state.joinRoomMessage}</div>
                 </form>
             </div>
